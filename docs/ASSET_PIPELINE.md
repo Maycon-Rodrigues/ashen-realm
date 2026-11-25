@@ -20,6 +20,10 @@ O script seleciona malhas, preserva transformações da hierarquia na geometria,
 
 Prefira FBX para importação nativa neste projeto. Use GLB para intercâmbio antes da conversão para FBX. Os modelos em `Art/Generated` são intermediários locais. Para integrar um modelo definitivo, promova o FBX e seu `.meta` para uma pasta versionada e prepare seu material URP e collider no prefab.
 
+O CombatSandbox usa `Rock.fbx`, `DeadTree.fbx` e `Altar.fbx` de `Assets/_Game/Art/Arena`. Eles foram gerados com a seed padrão 71. Para atualizar um modelo, gere o FBX com `--verify`, substitua somente o FBX correspondente em `Art/Arena` e preserve seu `.meta`. A cena reaproveita as colisões dos pilares que esses modelos decoram.
+
+Os sons de ataque e impacto em `Assets/_Game/Audio` podem ser recriados com `python Tools/Audio/generate-combat-cues.py`.
+
 Depois de gerar `Rock.fbx` pelo README e rodar o bootstrap, confirme que a Unity encontrou uma malha no modelo.
 
 ```bash

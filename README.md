@@ -1,6 +1,6 @@
 # Ashen Realm
 
-Action RPG 3D isométrico para PC, single-player, com estética dark fantasy low-poly. O Sprint 01 é uma arena para experimentar aproximação, ataque corpo a corpo e a reação de um inimigo.
+Action RPG 3D isométrico para PC, single-player, com estética dark fantasy low-poly. O CombatSandbox é uma arena para testar aproximação, esquiva e contra-ataque contra um inimigo.
 
 ## Pré-requisitos
 
@@ -19,7 +19,7 @@ export UNITY_EDITOR="/caminho/para/Editor/Unity"
   -executeMethod AshenRealm.Editor.CombatSandboxBuilder.Generate
 ```
 
-Pressione **Play**. Mova-se com **WASD** ou o **analógico esquerdo**. Vire o personagem na direção do inimigo e ataque com **clique esquerdo** ou o **botão oeste** do gamepad. O HUD mostra os pontos de vida. Para reiniciar, saia e volte ao Play Mode.
+Pressione **Play**. Mova-se com **WASD** ou o **analógico esquerdo**. Vire o personagem na direção do inimigo e ataque com **clique esquerdo** ou o **botão oeste** do gamepad. Saia da área laranja quando o inimigo preparar o golpe. Depois de vencer ou perder, pressione **R** ou **Start** para tentar de novo.
 
 O checkout inclui a cena, a NavMesh, as configurações do Unity e o lock dos pacotes. No Editor, o menu **Ashen Realm → Open or Generate Combat Sandbox** reabre a cena ou cria uma nova se ela estiver ausente. Com o Editor gráfico fechado, `./Tools/Unity/bootstrap.sh` executa o mesmo fluxo pelo terminal.
 
@@ -31,4 +31,4 @@ blender --background --python-exit-code 1 \
   --output-dir Assets/_Game/Art/Generated --verify
 ```
 
-O Blender portátil 4.5.3 foi executado com sucesso no Omarchy. Consulte os [critérios do sprint](docs/SPRINT_01.md), a [arquitetura](docs/ARCHITECTURE.md) e o [pipeline de assets](docs/ASSET_PIPELINE.md).
+O Blender portátil 4.5.3 foi executado com sucesso no Omarchy. Consulte os [resultados do Sprint 02](docs/SPRINT_02.md), a [arquitetura](docs/ARCHITECTURE.md) e o [pipeline de assets](docs/ASSET_PIPELINE.md).
