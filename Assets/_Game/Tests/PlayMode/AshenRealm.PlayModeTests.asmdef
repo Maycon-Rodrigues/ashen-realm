@@ -1,0 +1,7 @@
+{
+  "name": "AshenRealm.PlayModeTests",
+  "rootNamespace": "AshenRealm.Tests",
+  "references": ["AshenRealm", "Unity.InputSystem"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}
