@@ -5,12 +5,8 @@
 /Build/
 /Builds/
 /UserSettings/
-/ProjectSettings/
-/Assets/_Game/Generated/
-/Assets/_Game/Generated.meta
 /Assets/_Game/Art/Generated/
 /Assets/_Game/Art/Generated.meta
-/Packages/packages-lock.json
 .vs/
 .idea/
 *.csproj

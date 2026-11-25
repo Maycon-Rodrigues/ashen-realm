@@ -27,6 +27,8 @@ namespace AshenRealm.Editor
         {
             Directory.CreateDirectory(Output);
             AssetDatabase.Refresh();
+            if (PlayerSettings.productName == "Stock")
+                PlayerSettings.productName = "Ashen Realm";
             ConfigureInputAndRendering();
 
             if (!File.Exists(ScenePath))

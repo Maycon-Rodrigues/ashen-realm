@@ -6,15 +6,15 @@ Objetivo: usar uma arena reproduzível para mover o Fallen Knight, entrar em com
 
 | Critério | Evidência disponível |
 | --- | --- |
-| Projeto abre e compila | Pendente. Unity Editor e licença ativa indisponíveis no ambiente inspecionado. |
-| Cena CombatSandbox disponível | Gerador implementado. A execução e o bake aguardam o Editor. |
-| WASD e câmera | Implementados. Há um teste de Play Mode preparado com entrada simulada. |
-| Ataque básico | Implementado. O teste preparado simula clique esquerdo. |
-| Detecção, perseguição e dano inimigo | Implementados. O teste preparado verifica repouso inicial, perseguição e perda de HP. |
-| Inimigo recebe dano e morre | Implementado. O teste preparado exige 45 → 25 → 5 → 0 HP, desativação e um evento de morte. |
-| Console sem erros críticos | Pendente de execução no Unity. |
-| Ambiente reproduzível | Documentado. O pipeline Blender foi reproduzido. O bootstrap Unity aguarda execução. |
-| Asset automático importado na Unity | Cinco FBX gerados e reimportados no Blender. Importação Unity pendente. |
+| Projeto abre e compila | Validado em Unity 6000.3.29f1 com licença Personal no Omarchy 4.5.0. |
+| Cena CombatSandbox disponível | Gerada pelo Editor com bake da NavMesh e carregada pelo teste. |
+| WASD e câmera | Play Mode validou teclado, analógico virtual e acompanhamento da câmera. |
+| Ataque básico | Play Mode validou clique esquerdo, botão oeste virtual e cooldown. |
+| Detecção, perseguição e dano inimigo | Play Mode verificou repouso inicial, perseguição e perda de HP. |
+| Inimigo recebe dano e morre | Play Mode confirmou 45 → 25 → 5 → 0 HP, dano único por ataque com dois colliders e um evento de morte. |
+| Console sem erros críticos | O teste passou sem logs de erro inesperados no Play Mode. |
+| Ambiente reproduzível | Bootstrap Unity e pipeline Blender executados. Cena, configurações e lock dos pacotes versionados. |
+| Asset automático importado na Unity | O Editor importou `Rock.fbx` e confirmou a presença da malha. |
 
 ## Evidência executada
 
@@ -24,7 +24,9 @@ O teste de orçamento rejeitou a rocha de 80 triângulos com limite de 79 e saiu
 
 ## Validação no Unity
 
-Execute o bootstrap descrito no README. Com o Editor gráfico fechado, execute o teste sem `-quit`, pois o Test Runner gerencia o encerramento.
+Em 25/11/2026, a geração e o bake foram confirmados em `Logs/unity-sandbox.log`. A importação foi confirmada em `Logs/unity-fbx.log`. O Play Mode passou tanto em headless (`Logs/playmode.xml`) quanto com a GPU Intel/Mesa (`Logs/playmode-graphics.xml`), com 1 teste aprovado e 0 falhas em cada execução. A primeira execução precisou de um ajuste no teste para receber input virtual sem foco. A experiência com um gamepad físico permanece sem verificação.
+
+Com o Editor gráfico fechado, execute o teste sem `-quit`, pois o Test Runner gerencia o encerramento.
 
 ```bash
 "$UNITY_EDITOR" -batchmode -nographics -projectPath "$PWD" \
@@ -32,4 +34,4 @@ Execute o bootstrap descrito no README. Com o Editor gráfico fechado, execute o
   -testResults "$PWD/Logs/playmode.xml" -logFile "$PWD/Logs/unity-tests.log"
 ```
 
-O teste usa teclado e mouse virtuais. Abra a cena no Editor para verificar visual, experiência de controle com um gamepad físico e mensagens do Console. O comando de importação FBX está no pipeline de assets.
+O comando de importação FBX está no pipeline de assets.

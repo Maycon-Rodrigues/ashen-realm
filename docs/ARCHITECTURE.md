@@ -13,4 +13,4 @@ Os componentes em `Assets/_Game/Scripts` usam referências serializadas e parâm
 
 A movimentação usa `Time.deltaTime`. O CharacterController aplica colisões sem exigir Rigidbody. No ataque, múltiplos colliders da mesma entidade compartilham uma referência de `Health` e recebem uma aplicação de dano por golpe. O evento `Attacked` pode acionar animação ou efeitos quando esses sistemas forem adicionados. A IA para o agente ao entrar em alcance, gira na direção do alvo e desativa o ator ao morrer.
 
-O Editor cria a arena, registra a cena no perfil padrão, configura URP e Input System, e usa os colliders da arena como fonte da NavMesh. Os arquivos internos e a cena inicial são gerados pelo Unity, e permanecem como saídas locais enquanto a primeira abertura estiver pendente. As fontes C# e suas metas são versionadas.
+O Editor cria a arena, registra a cena no perfil padrão, configura URP e Input System, e usa os colliders da arena como fonte da NavMesh. O repositório inclui a cena, a NavMesh, os materiais e as configurações inicializadas pelo Unity. O gerador permite recriar a arena caso a cena esteja ausente. As fontes C# e seus metadados também são versionados.

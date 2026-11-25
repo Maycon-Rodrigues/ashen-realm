@@ -4,7 +4,7 @@ set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 editor="${UNITY_EDITOR:-Unity}"
 editor="$(command -v -- "$editor")" || {
-  echo 'Informe UNITY_EDITOR com o caminho ao executável Unity 6.0 LTS.' >&2
+  echo 'Informe UNITY_EDITOR com o caminho ao executável Unity 6.3 LTS.' >&2
   exit 1
 }
 if [[ "$editor" != /* ]]; then
@@ -21,8 +21,8 @@ if [[ ! -f "$root/ProjectSettings/ProjectVersion.txt" ]]; then
   trap 'rm -rf -- "$work"' EXIT
   "$editor" -batchmode -nographics -quit -createProject "$work/Stock" -logFile "$root/Logs/unity-create.log"
   version="$(<"$work/Stock/ProjectSettings/ProjectVersion.txt")"
-  if [[ "$version" != 'm_EditorVersion: 6000.0.'* ]]; then
-    echo 'Use um Editor da linha 6000.0 LTS.' >&2
+  if [[ "$version" != 'm_EditorVersion: 6000.3.'* ]]; then
+    echo 'Use um Editor da linha 6000.3 LTS.' >&2
     exit 1
   fi
   cp -a -- "$work/Stock/ProjectSettings" "$root/"
