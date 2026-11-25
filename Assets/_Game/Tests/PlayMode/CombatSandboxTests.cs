@@ -12,7 +12,7 @@ namespace AshenRealm.Tests
     public sealed class CombatSandboxTests
     {
         [UnityTest]
-        public IEnumerator PlayerMovesAndDefeatsChasingEnemy()
+        public IEnumerator PlayerDodgesDefeatsAndRestartsEncounter()
         {
             var settings = InputSystem.settings;
             var backgroundBehavior = settings.backgroundBehavior;
@@ -63,6 +63,26 @@ namespace AshenRealm.Tests
                 Assert.That(Vector3.Distance(originalCamera, camera.transform.position), Is.GreaterThan(1f));
 
                 float deadline = Time.time + 4f;
+                while (!enemy.IsWindingUp && Time.time < deadline)
+                    yield return null;
+                Assert.That(enemy.IsWindingUp, Is.True);
+                Assert.That(playerHealth.CurrentHealth, Is.EqualTo(playerHealth.MaxHealth));
+                var warning = enemy.GetComponentInChildren<LineRenderer>();
+                yield return null;
+                Assert.That(warning.enabled, Is.True);
+
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.S, Key.A));
+                yield return new WaitForSeconds(0.35f);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                deadline = Time.time + 2f;
+                while (enemy.IsWindingUp && Time.time < deadline)
+                    yield return null;
+                Assert.That(enemy.IsWindingUp, Is.False);
+                yield return null;
+                Assert.That(warning.enabled, Is.False);
+                Assert.That(playerHealth.CurrentHealth, Is.EqualTo(playerHealth.MaxHealth), "Retreat must avoid the announced strike.");
+
+                deadline = Time.time + 5f;
                 while (playerHealth.CurrentHealth == playerHealth.MaxHealth && Time.time < deadline)
                     yield return null;
                 Assert.That(Vector3.Distance(originalEnemy, enemy.transform.position), Is.GreaterThan(1f));
@@ -86,8 +106,11 @@ namespace AshenRealm.Tests
                         InputSystem.QueueStateEvent(mouse, new MouseState().WithButton(MouseButton.Left));
                     yield return null;
                     yield return null;
-                    Assert.That(enemyHealth.CurrentHealth, Is.EqualTo(Mathf.Max(0, 45 - strike * 20)));
+                    Assert.That(combat.WindupProgress, Is.GreaterThanOrEqualTo(0f));
+                    Assert.That(enemyHealth.CurrentHealth, Is.EqualTo(45 - (strike - 1) * 20));
                     Assert.That(combat.TryAttack(), Is.False);
+                    yield return new WaitForSeconds(0.22f);
+                    Assert.That(enemyHealth.CurrentHealth, Is.EqualTo(Mathf.Max(0, 45 - strike * 20)));
                     InputSystem.QueueStateEvent(mouse, new MouseState());
                     InputSystem.QueueStateEvent(gamepad, new GamepadState());
                     yield return new WaitForSeconds(0.55f);
@@ -103,6 +126,16 @@ namespace AshenRealm.Tests
                 InputSystem.QueueStateEvent(gamepad, new GamepadState());
                 yield return null;
                 Assert.That(Vector3.Dot(movement.transform.position - beforeStick, -right), Is.GreaterThan(0.5f));
+
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.R));
+                yield return WaitForRestart(playerHealth);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+
+                var restartedPlayer = Object.FindAnyObjectByType<PlayerController>().GetComponent<Health>();
+                restartedPlayer.TakeDamage(restartedPlayer.MaxHealth);
+                InputSystem.QueueStateEvent(gamepad, new GamepadState().WithButton(GamepadButton.Start));
+                yield return WaitForRestart(restartedPlayer);
+                InputSystem.QueueStateEvent(gamepad, new GamepadState());
                 LogAssert.NoUnexpectedReceived();
             }
             finally
@@ -116,6 +149,20 @@ namespace AshenRealm.Tests
                 settings.editorInputBehaviorInPlayMode = editorInputBehavior;
 #endif
             }
+        }
+
+        private static IEnumerator WaitForRestart(Health previousPlayer)
+        {
+            float deadline = Time.time + 5f;
+            while (previousPlayer && Time.time < deadline)
+                yield return null;
+
+            Assert.That((bool)previousPlayer, Is.False, "The current encounter must unload.");
+            yield return null;
+            var player = Object.FindAnyObjectByType<PlayerController>().GetComponent<Health>();
+            var enemy = Object.FindAnyObjectByType<EnemyAI>().GetComponent<Health>();
+            Assert.That(player.CurrentHealth, Is.EqualTo(player.MaxHealth));
+            Assert.That(enemy.CurrentHealth, Is.EqualTo(enemy.MaxHealth));
         }
     }
 }

@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace AshenRealm
 {
@@ -7,18 +9,61 @@ namespace AshenRealm
         [SerializeField] private Health player;
         [SerializeField] private Health enemy;
 
+        private EnemyAI enemyCombat;
+        private InputAction restart;
+        private bool restarting;
+        private bool EncounterEnded => player && enemy && (!player.IsAlive || !enemy.IsAlive);
+
+        private void Awake()
+        {
+            if (enemy)
+                enemyCombat = enemy.GetComponent<EnemyAI>();
+            restart = new InputAction("Restart", InputActionType.Button, "<Keyboard>/r");
+            restart.AddBinding("<Gamepad>/start");
+        }
+
+        private void OnEnable() => restart.Enable();
+        private void OnDisable() => restart.Disable();
+        private void OnDestroy() => restart.Dispose();
+
+        private void Update()
+        {
+            if (restart.WasPressedThisFrame())
+                Restart();
+        }
+
+        private void Restart()
+        {
+            if (!EncounterEnded || restarting)
+                return;
+
+            restarting = true;
+            SceneManager.LoadSceneAsync(gameObject.scene.buildIndex);
+        }
+
         private void OnGUI()
         {
             if (!player || !enemy)
                 return;
 
-            GUILayout.BeginArea(new Rect(16, 16, 300, 120), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(16, 16, 320, 134), GUI.skin.box);
             GUILayout.Label($"Cavaleiro  {player.CurrentHealth}/{player.MaxHealth} HP");
             GUILayout.Label($"Corrompido  {enemy.CurrentHealth}/{enemy.MaxHealth} HP");
             GUILayout.Label("WASD / Analógico esquerdo · Mover");
             GUILayout.Label("Clique esquerdo / Botão oeste · Atacar");
-            if (!player.IsAlive || !enemy.IsAlive)
-                GUILayout.Label(player.IsAlive ? "Inimigo derrotado." : "Cavaleiro derrotado.");
+            if (enemyCombat && enemyCombat.IsWindingUp)
+                GUILayout.Label("Golpe iminente · Saia da área marcada");
+            GUILayout.EndArea();
+
+            if (!EncounterEnded)
+                return;
+
+            var panel = new Rect((Screen.width - 280) / 2f, (Screen.height - 108) / 2f, 280, 108);
+            GUILayout.BeginArea(panel, GUI.skin.box);
+            GUILayout.Label(player.IsAlive ? "Vitória" : "Derrota");
+            GUILayout.Label("R / Start · Tentar de novo");
+            if (GUILayout.Button("Reiniciar encontro"))
+                Restart();
             GUILayout.EndArea();
         }
     }

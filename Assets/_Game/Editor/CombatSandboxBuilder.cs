@@ -36,12 +36,91 @@ namespace AshenRealm.Editor
             else
                 EditorSceneManager.OpenScene(ScenePath);
 
+            UpgradeCombatPresentation();
+
             if (!EditorBuildSettings.scenes.Any(scene => scene.path == ScenePath))
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes
                     .Append(new EditorBuildSettingsScene(ScenePath, true)).ToArray();
 
             AssetDatabase.SaveAssets();
             Debug.Log("Ashen Realm: CombatSandbox ready at " + ScenePath);
+        }
+
+        private static void UpgradeCombatPresentation()
+        {
+            var scene = EditorSceneManager.GetActiveScene();
+            var roots = scene.GetRootGameObjects();
+            var knight = roots.Single(root => root.TryGetComponent<PlayerCombat>(out _));
+            if (knight.TryGetComponent<CombatFeedback>(out _))
+                return;
+
+            var grunt = roots.Single(root => root.TryGetComponent<EnemyAI>(out _));
+            var border = Material("RuinStone", new Color(0.18f, 0.22f, 0.22f));
+            var blade = Material("BladeSteel", new Color(0.59f, 0.66f, 0.67f));
+            var pivot = new GameObject("Blade Pivot").transform;
+            pivot.SetParent(knight.transform, false);
+            pivot.localPosition = new Vector3(0.46f, 1.02f, 0.07f);
+            Primitive("Sword blade", PrimitiveType.Cube, pivot, new Vector3(0, 0, 0.48f),
+                new Vector3(0.10f, 0.07f, 0.79f), blade, false);
+            Primitive("Crossguard", PrimitiveType.Cube, pivot, new Vector3(0, 0, 0.08f),
+                new Vector3(0.29f, 0.1f, 0.075f), border, false);
+
+            var warningObject = new GameObject("Attack Warning");
+            warningObject.transform.SetParent(grunt.transform, false);
+            warningObject.transform.localPosition = Vector3.up * 0.04f;
+            var warning = warningObject.AddComponent<LineRenderer>();
+            warning.useWorldSpace = false;
+            warning.loop = true;
+            warning.sortingOrder = 1;
+            warning.shadowCastingMode = ShadowCastingMode.Off;
+            warning.receiveShadows = false;
+            warning.sharedMaterial = Material("AttackWarning", new Color(1f, 0.33f, 0.11f), "Universal Render Pipeline/Unlit");
+            warning.enabled = false;
+
+            var swing = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Game/Audio/Swing.wav");
+            var hit = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Game/Audio/Hit.wav");
+            if (!swing || !hit)
+                throw new InvalidOperationException("Generate both combat cues with Tools/Audio/generate-combat-cues.py.");
+
+            AddCombatFeedback(knight, pivot, null, swing, hit);
+            AddCombatFeedback(grunt, grunt.transform.Find("Body"), warning, swing, hit);
+
+            var arena = roots.Single(root => root.name == "Arena");
+            var piers = arena.transform.Cast<Transform>().Where(child => child.name == "Broken pier").ToArray();
+            AddDecoration(arena.transform, piers[0], "Altar", 0.64f, border);
+            AddDecoration(arena.transform, piers[2], "Rock", 0.60f, border);
+            AddDecoration(arena.transform, piers[5], "DeadTree", 0.79f,
+                Material("WitheredBark", new Color(0.24f, 0.16f, 0.11f)));
+
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+                throw new IOException("Could not save the combat presentation in " + ScenePath);
+        }
+
+        private static void AddCombatFeedback(GameObject actor, Transform pivot, LineRenderer warning, AudioClip swing, AudioClip hit)
+        {
+            var feedback = actor.AddComponent<CombatFeedback>();
+            SetReference(feedback, "body", actor.transform.Find("Body").GetComponent<Renderer>());
+            SetReference(feedback, "pose", pivot);
+            SetReference(feedback, "warning", warning);
+            SetReference(feedback, "swing", swing);
+            SetReference(feedback, "hit", hit);
+        }
+
+        private static void AddDecoration(Transform parent, Transform pier, string modelName, float scale, Material material)
+        {
+            const string folder = "Assets/_Game/Art/Arena";
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>($"{folder}/{modelName}.fbx");
+            if (!model)
+                throw new InvalidOperationException($"Missing arena model {modelName} in {folder}.");
+
+            var prop = (GameObject)PrefabUtility.InstantiatePrefab(model, parent);
+            prop.transform.localPosition = Vector3.ProjectOnPlane(pier.localPosition, Vector3.up);
+            prop.transform.localScale = Vector3.one * scale;
+            foreach (var renderer in prop.GetComponentsInChildren<MeshRenderer>())
+                renderer.sharedMaterials = Enumerable.Repeat(material, renderer.sharedMaterials.Length).ToArray();
+
+            // Reuse the pier's baked collision footprint for the new visuals.
+            pier.GetComponent<Renderer>().enabled = false;
         }
 
         private static void ConfigureInputAndRendering()
@@ -205,18 +284,19 @@ namespace AshenRealm.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static Material Material(string name, Color color)
+        private static Material Material(string name, Color color, string shaderName = "Universal Render Pipeline/Lit")
         {
             string path = Output + "/" + name + ".mat";
             var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing)
                 return existing;
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            var shader = Shader.Find(shaderName);
             if (!shader)
-                throw new InvalidOperationException("URP Lit shader is missing.");
+                throw new InvalidOperationException($"Shader {shaderName} is missing.");
 
             var material = new Material(shader) { color = color };
-            material.SetFloat("_Smoothness", 0.12f);
+            if (material.HasProperty("_Smoothness"))
+                material.SetFloat("_Smoothness", 0.12f);
             AssetDatabase.CreateAsset(material, path);
             return material;
         }

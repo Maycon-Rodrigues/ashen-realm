@@ -12,6 +12,7 @@ namespace AshenRealm
         [SerializeField, Min(0)] private float gravity = 22f;
         private CharacterController motor;
         private Health health;
+        private PlayerCombat combat;
         private InputAction move;
         private float verticalSpeed;
         public Vector3 MoveDirection { get; private set; }
@@ -20,6 +21,7 @@ namespace AshenRealm
         {
             motor = GetComponent<CharacterController>();
             health = GetComponent<Health>();
+            combat = GetComponent<PlayerCombat>();
             move = new InputAction("Move", InputActionType.Value, expectedControlType: "Vector2");
             move.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/w")
                 .With("Down", "<Keyboard>/s").With("Left", "<Keyboard>/a").With("Right", "<Keyboard>/d");
@@ -44,7 +46,7 @@ namespace AshenRealm
             Vector3 right = Vector3.Cross(Vector3.up, forward);
             MoveDirection = forward * input.y + right * input.x;
 
-            if (MoveDirection.sqrMagnitude > 0.001f)
+            if (MoveDirection.sqrMagnitude > 0.001f && (!combat || !combat.IsAttacking))
                 transform.rotation = Quaternion.RotateTowards(transform.rotation,
                     Quaternion.LookRotation(MoveDirection), turnSpeed * Time.deltaTime);
 

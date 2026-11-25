@@ -10,6 +10,7 @@ namespace AshenRealm
         public int MaxHealth => maxHealth;
         public int CurrentHealth { get; private set; }
         public bool IsAlive => CurrentHealth > 0;
+        public event Action Damaged;
         public event Action Died;
 
         private void Awake() => CurrentHealth = MaxHealth;
@@ -20,6 +21,7 @@ namespace AshenRealm
                 return false;
 
             CurrentHealth = Mathf.Max(0, CurrentHealth - amount);
+            Damaged?.Invoke();
             if (!IsAlive)
                 Died?.Invoke();
 
