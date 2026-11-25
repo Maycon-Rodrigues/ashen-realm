@@ -15,7 +15,8 @@ No Unity Hub, adicione a raiz do clone e abra `Assets/_Game/Generated/CombatSand
 
 ```bash
 export UNITY_EDITOR="/caminho/para/Editor/Unity"
-"$UNITY_EDITOR" -projectPath "$PWD" -openfile Assets/_Game/Generated/CombatSandbox.unity
+"$UNITY_EDITOR" -projectPath "$PWD" \
+  -executeMethod AshenRealm.Editor.CombatSandboxBuilder.Generate
 ```
 
 Pressione **Play**. Mova-se com **WASD** ou o **analógico esquerdo**. Vire o personagem na direção do inimigo e ataque com **clique esquerdo** ou o **botão oeste** do gamepad. O HUD mostra os pontos de vida. Para reiniciar, saia e volte ao Play Mode.
