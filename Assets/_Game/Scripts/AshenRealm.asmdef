@@ -1,0 +1,5 @@
+{
+  "name": "AshenRealm",
+  "rootNamespace": "AshenRealm",
+  "references": ["Unity.InputSystem"]
+}
