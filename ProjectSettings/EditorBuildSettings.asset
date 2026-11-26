@@ -8,5 +8,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Game/Generated/CombatSandbox.unity
     guid: 758d594c0034d5464a0e1cfca4669abf
+  - enabled: 1
+    path: Assets/_Game/Generated/AshenRuins.unity
+    guid: e90cbe7a2d9110fada56505852988297
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

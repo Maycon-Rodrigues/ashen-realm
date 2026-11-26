@@ -34,3 +34,5 @@ blender --background --python-exit-code 1 \
 ```
 
 O Blender portátil 4.5.3 foi executado com sucesso no Omarchy. Consulte a [direção de arte](docs/ART_DIRECTION.md), os [resultados do Sprint 03](docs/SPRINT_03.md) e o [pipeline de assets](docs/ASSET_PIPELINE.md).
+
+A cena `AshenRuins` demonstra o primeiro bioma modular com uma composição por seed. A [documentação do bioma](docs/ASHEN_RUINS.md) descreve as referências, os módulos e os comandos de geração.
