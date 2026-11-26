@@ -33,4 +33,4 @@ blender --background --python-exit-code 1 \
   --output-dir Assets/_Game/Art/Generated --verify
 ```
 
-O Blender portátil 4.5.3 foi executado com sucesso no Omarchy. Consulte os [resultados do Sprint 03](docs/SPRINT_03.md), a [arquitetura](docs/ARCHITECTURE.md) e o [pipeline de assets](docs/ASSET_PIPELINE.md).
+O Blender portátil 4.5.3 foi executado com sucesso no Omarchy. Consulte a [direção de arte](docs/ART_DIRECTION.md), os [resultados do Sprint 03](docs/SPRINT_03.md) e o [pipeline de assets](docs/ASSET_PIPELINE.md).

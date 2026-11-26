@@ -166,7 +166,7 @@ namespace AshenRealm.Tests
                 progression = Object.FindAnyObjectByType<SandboxProgression>();
                 Assert.That(progression.State, Is.EqualTo(SwordState.Equipped));
                 Assert.That(progression.Damage, Is.EqualTo(25));
-                Assert.That(movement.transform.Find("Blade Pivot/Sword blade").GetComponent<Renderer>()
+                Assert.That(movement.transform.Find("Blade Pivot/AshenSword/Steel.Blade").GetComponent<Renderer>()
                     .sharedMaterial.name, Is.EqualTo("AshenBlade"));
 
                 MovePlayer(movement, enemy.transform.position - Vector3.right * 1.5f);

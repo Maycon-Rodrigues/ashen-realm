@@ -38,6 +38,8 @@ namespace AshenRealm.Editor
 
             UpgradeCombatPresentation();
             UpgradeSandboxProgression();
+            if (CombatSandboxArt.Apply() && !EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), ScenePath))
+                throw new IOException("Could not save the art pass in " + ScenePath);
 
             if (!EditorBuildSettings.scenes.Any(scene => scene.path == ScenePath))
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes
@@ -315,14 +317,14 @@ namespace AshenRealm.Editor
             throw new InvalidOperationException("A user layer is required for Enemy.");
         }
 
-        private static void SetReference(UnityEngine.Object owner, string field, UnityEngine.Object value)
+        internal static void SetReference(UnityEngine.Object owner, string field, UnityEngine.Object value)
         {
             var serialized = new SerializedObject(owner);
             serialized.FindProperty(field).objectReferenceValue = value;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static Material Material(string name, Color color, string shaderName = "Universal Render Pipeline/Lit")
+        internal static Material Material(string name, Color color, string shaderName = "Universal Render Pipeline/Lit")
         {
             string path = Output + "/" + name + ".mat";
             var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -347,7 +349,7 @@ namespace AshenRealm.Editor
                 new Vector3(0.4f, 0.22f, 0.24f), trim, false);
         }
 
-        private static void Primitive(string name, PrimitiveType type, Transform parent, Vector3 position,
+        internal static void Primitive(string name, PrimitiveType type, Transform parent, Vector3 position,
             Vector3 scale, Material material, bool collides)
         {
             GameObject part = GameObject.CreatePrimitive(type);

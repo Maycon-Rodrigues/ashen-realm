@@ -24,6 +24,16 @@ O CombatSandbox usa `Rock.fbx`, `DeadTree.fbx` e `Altar.fbx` de `Assets/_Game/Ar
 
 Os sons de ataque e impacto em `Assets/_Game/Audio` podem ser recriados com `python Tools/Audio/generate-combat-cues.py`.
 
+Para gerar de novo o kit visual do sandbox, use Blender 4.5 LTS. O script valida a geometria e reimporta cada FBX para conferir os triângulos.
+
+```bash
+blender --background --python-exit-code 1 \
+  --python Tools/Blender/scripts/vertical_slice.py -- \
+  --output-dir Assets/_Game/Art/VerticalSlice
+```
+
+Mantenha os `.meta` ao regenerar. Os nomes dos objetos indicam a superfície e a parte do modelo. O Editor usa esses nomes para aplicar os materiais, identificar a frente dos personagens e montar os pivôs das pernas.
+
 Depois de gerar `Rock.fbx` pelo README e rodar o bootstrap, confirme que a Unity encontrou uma malha no modelo.
 
 ```bash
