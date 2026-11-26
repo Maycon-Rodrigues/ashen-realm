@@ -33,7 +33,7 @@ namespace AshenRealm.Tests
             AssertNavigation();
         }
 
-        private static (string Name, Vector3 Position, Quaternion Orientation)[] Layout(AshenRuinsRoom room)
+        private static (string Name, Vector3 Position, Quaternion Orientation, Vector3 Scale)[] Layout(AshenRuinsRoom room)
         {
             var assembly = room.transform.Find("Assembled Modules");
             Assert.That(assembly, Is.Not.Null);
@@ -45,7 +45,7 @@ namespace AshenRealm.Tests
                 Is.EqualTo(1));
 
             return assembly.Cast<Transform>().SelectMany(group => group.Cast<Transform>())
-                .Select(module => (module.name, module.localPosition, module.localRotation)).ToArray();
+                .Select(module => (module.name, module.localPosition, module.localRotation, module.localScale)).ToArray();
         }
 
         private static void AssertNavigation()
@@ -56,6 +56,8 @@ namespace AshenRealm.Tests
             Assert.That(NavMesh.CalculatePath(enemy.transform.position, player.transform.position, NavMesh.AllAreas, path),
                 Is.True);
             Assert.That(path.status, Is.EqualTo(NavMeshPathStatus.PathComplete));
+            Assert.That(NavMesh.SamplePosition(new Vector3(0, 0, AshenRuinsRoom.Rows + 1f),
+                out _, 0.3f, NavMesh.AllAreas), Is.False);
         }
     }
 }

@@ -80,10 +80,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -5988453138541338215, guid: 08fd3f2ecff344148a70c010a207561b, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 2e6a3b05c5bbab8cf99f27eed3ddee2c, type: 2}
     - target: {fileID: -2835672131609706996, guid: 08fd3f2ecff344148a70c010a207561b, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -92,6 +88,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 9b1866bdbe1247d2d9a0bd13cca2c1a1, type: 2}
+    - target: {fileID: -793207314552486806, guid: 08fd3f2ecff344148a70c010a207561b, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: fba4f016e4a16a015ae4a23e1aec91d8, type: 2}
     - target: {fileID: 919132149155446097, guid: 08fd3f2ecff344148a70c010a207561b, type: 3}
       propertyPath: m_Name
       value: SealedArch

@@ -83,7 +83,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 956b61dc8dbcdcdae8aaf9cc75771e65, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 2e6a3b05c5bbab8cf99f27eed3ddee2c, type: 2}
+      objectReference: {fileID: 2100000, guid: fba4f016e4a16a015ae4a23e1aec91d8, type: 2}
     - target: {fileID: 919132149155446097, guid: 956b61dc8dbcdcdae8aaf9cc75771e65, type: 3}
       propertyPath: m_Name
       value: Wall

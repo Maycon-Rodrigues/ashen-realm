@@ -14,9 +14,11 @@ from environment import material, meshes, reset, validate
 
 PALETTE = {
     "RuinsPaint": (0.33, 0.23, 0.24),
+    "RuinsPaving": (0.68, 0.56, 0.61),
+    "RuinsMasonry": (0.33, 0.23, 0.24),
+    "RuinsCliff": (0.20, 0.08, 0.13),
     "RuinsCoal": (0.053, 0.025, 0.037),
     "RuinsFire": (1.0, 0.29, 0.017),
-    "RuinsCore": (1.0, 0.73, 0.16),
     "RuinsRune": (0.84, 0.075, 0.045),
 }
 STONE = [(0.157, 0.088, 0.126), (0.236, 0.137, 0.147), (0.134, 0.083, 0.133),
@@ -31,7 +33,7 @@ def painted(obj, tint):
     return obj
 
 
-def rock(rng, name, x, y, base, width, depth, height, colors=STONE):
+def rock(rng, name, x, y, base, width, depth, height, colors=STONE, surface="RuinsMasonry"):
     """A masonry unit with irregular corners and a separate chipped shoulder."""
     half_x, half_y = width / 2, depth / 2
     cut = min(width, depth, height) * rng.uniform(0.15, 0.31)
@@ -49,43 +51,35 @@ def rock(rng, name, x, y, base, width, depth, height, colors=STONE):
         for i in range(8):
             j = (i + 1) % 8
             faces.append((start + i, start + j, start + j + 8, start + i + 8))
-    return painted(shapes.poly(name, points, faces, "RuinsPaint"), rng.choice(colors))
+    return painted(shapes.poly(name, points, faces, surface), rng.choice(colors))
 
 
-def tile(rng, variant):
-    rock(rng, "Mortar", 0, 0, -0.22, 1.997, 1.997, 0.147, [(0.093, 0.062, 0.085)])
-    for row in range(3):
-        cut = rng.uniform(-0.38, 0.32)
-        for lo, hi in ((-0.994, cut), (cut, 0.994)):
-            top = rng.uniform(0.006, 0.021)
-            y = (row - 1) * 0.66
-            rock(rng, "Split flagstone", (lo + hi) / 2, y, -0.11,
-                 hi - lo - 0.025, 0.63, top + 0.11,
-                 STONE if variant == 0 else [(r * 0.67, g * 0.72, b * 0.74) for r, g, b in STONE])
-            if variant or row != 1:
-                x = rng.uniform(lo + 0.17, hi - 0.17)
-                fracture = [(x - 0.12, y - 0.29), (x - 0.045, y - 0.13),
-                            (x + 0.035, y - 0.09), (x + 0.095, y + rng.uniform(0.035, 0.20))]
-                for index, ((u, v), (a, b)) in enumerate(zip(fracture, fracture[1:])):
-                    width = max(0.006, 0.019 - index * 0.006)
-                    painted(shapes.poly("Hairline fracture", [(u, v, top + 0.005), (u + width, v, top + 0.005),
-                            (a + width * 0.73, b, top + 0.005), (a, b, top + 0.005)], [(0, 1, 2, 3)],
-                            "RuinsPaint"), (0.030, 0.016, 0.024))
-    if variant:
-        for _ in range(12):
-            x, y = rng.uniform(-0.9, 0.9), rng.uniform(-0.9, 0.9)
-            rock(rng, "Spall", x, y, 0.014, rng.uniform(0.07, 0.19), 0.10, 0.04)
+def tile(_, variant):
+    # The artwork defines the stone joints continuously across the module grid.
+    points = [(-1, -1, 0.012), (1, -1, 0.012), (1, 1, 0.012), (-1, 1, 0.012)]
+    painted(shapes.poly("Paving patch", points, [(0, 1, 2, 3)], "RuinsPaving"),
+            (0.72, 0.64, 0.68) if variant else (0.98, 0.95, 0.98))
+
+
+def debris(rng):
+    for index in range(16):
+        x, y = rng.uniform(-0.95, 0.95), rng.uniform(-0.56, 0.56)
+        size = rng.uniform(0.09, 0.51) if index < 10 else rng.uniform(0.045, 0.13)
+        chip = rock(rng, "Fallen masonry", 0, 0, -0.02, size, size * rng.uniform(0.6, 1.2),
+                    size * rng.uniform(0.4, 0.79))
+        chip.location.x, chip.location.y = x, y
+        chip.rotation_euler.z = rng.uniform(0, math.tau)
 
 
 def wall(rng, broken):
     rock(rng, "Foundation", 0, 0, -0.13, 1.96, 0.68, 0.31, [IRON])
-    for course in range(2 if broken else 5):
+    for course in range(3 if broken else 5):
         cut = rng.uniform(-0.37, 0.37)
         for lo, hi in ((-0.985, cut), (cut, 0.985)):
-            if broken and course == 1 and lo > -0.9:
+            if broken and course >= 1 and (lo > -0.9 or course == 2 and rng.random() < 0.30):
                 continue
             rock(rng, "Basalt course", (lo + hi) / 2, rng.uniform(-0.018, 0.018),
-                 0.17 + 0.29 * course, hi - lo - 0.016, 0.53, 0.30)
+                 0.17 + 0.29 * course, hi - lo - 0.016, rng.uniform(0.50, 0.59), 0.30)
     if not broken:
         for x in (-0.50, 0.50):
             rock(rng, "Coping", x, 0, 1.60, 0.986, 0.65, 0.22)
@@ -144,14 +138,12 @@ def brazier(rng):
     painted(shapes.taper("Cast pedestal", (0, 0, 0.20), (0, 0, 0.92), 0.31, 0.18, "RuinsPaint", 8), IRON)
     painted(shapes.taper("Cast bowl", (0, 0, 0.88), (0, 0, 1.19), 0.22, 0.53, "RuinsPaint", 10), IRON)
     painted(shapes.taper("Copper lip", (0, 0, 1.17), (0, 0, 1.24), 0.53, 0.56, "RuinsPaint", 10), BRONZE)
-    for i in range(7):
-        a = i * math.tau / 7
-        x, y = math.cos(a) * 0.27, math.sin(a) * 0.27
-        height = rng.uniform(0.51, 0.90)
-        shapes.taper("Outer flame", (x, y, 1.22), (x * 0.42 + 0.10, y * 0.64, 1.22 + height),
-                     0.18, 0.011, "RuinsFire", 7)
-        shapes.taper("Hot flame", (x * 0.8, y * 0.8, 1.23), (x * 0.42 - 0.03, y * 0.54, 1.37 + height * 0.53),
-                     0.12, 0.003, "RuinsCore", 6)
+    for i in range(8):
+        a = i * math.tau / 8
+        x, y = math.cos(a), math.sin(a)
+        painted(shapes.taper("Brazier strap", (x * 0.22, y * 0.22, 0.91),
+                             (x * 0.53, y * 0.53, 1.17), 0.049, 0.036, "RuinsPaint", 5), BRONZE)
+    rock(rng, "Banked coals", 0, 0, 1.19, 0.70, 0.70, 0.062, [IRON], "RuinsPaint")
 
 
 def briar(rng):
@@ -160,12 +152,6 @@ def briar(rng):
         x, y = math.cos(a), math.sin(a)
         end = (x * rng.uniform(0.38, 0.87), y * rng.uniform(0.29, 0.67), rng.uniform(0.30, 1.15))
         painted(shapes.taper("Briar branch", (0, 0, 0.02), end, 0.066, 0.014, "RuinsPaint", 5), IRON)
-        for _ in range(5):
-            dx, dy, dz = (rng.uniform(-0.23, 0.23) for _ in range(3))
-            splash = shapes.facet("Crimson leaves", (end[0] + dx, end[1] + dy, end[2] + dz),
-                                  (rng.uniform(0.12, 0.22), rng.uniform(0.10, 0.22), 0.063), "RuinsPaint")
-            splash.rotation_euler.y = rng.uniform(-1.3, 1.3)
-            painted(splash, (rng.uniform(0.42, 0.72), rng.uniform(0.03, 0.075), 0.063))
 
 
 def ash_tree(rng):
@@ -181,13 +167,6 @@ def ash_tree(rng):
         start = spine[1 + (i % 3)]
         end = (u * rng.uniform(0.84, 1.84), v * rng.uniform(0.74, 1.37), rng.uniform(2.85, 4.42))
         painted(shapes.taper("Charred limb", start, end, 0.119, 0.024, "RuinsPaint", 6), bark)
-        if i not in (1, 6):
-            for _ in range(9):
-                dx, dy, dz = (rng.uniform(-0.51, 0.51) for _ in range(3))
-                leaf = shapes.facet("Ashen crimson crown", (end[0] + dx, end[1] + dy, end[2] + dz),
-                                    (rng.uniform(0.28, 0.67), rng.uniform(0.25, 0.51), 0.12), "RuinsPaint")
-                leaf.rotation_euler.y = rng.uniform(-0.7, 0.7)
-                painted(leaf, rng.choice(((0.41, 0.016, 0.031), (0.60, 0.028, 0.042), (0.29, 0.012, 0.027))))
     for i in range(5):
         angle = i * math.tau / 5
         painted(shapes.taper("Ash root", (0, 0, 0.35), (math.cos(angle), math.sin(angle), 0.03),
@@ -200,7 +179,7 @@ def cliff(rng):
         depth = rng.uniform(0.5, 1.62)
         height = rng.uniform(3.0, 7.2)
         rock(rng, "Broken basalt organ", x, rng.uniform(-0.2, 0.2), -height, 0.70, depth, height,
-             [(0.147, 0.070, 0.10), (0.198, 0.091, 0.12), (0.101, 0.052, 0.081)])
+             [(0.147, 0.070, 0.10), (0.198, 0.091, 0.12), (0.101, 0.052, 0.081)], "RuinsCliff")
 
 
 def rune(_):
@@ -257,6 +236,7 @@ MODULES = {
     "AshTree": ash_tree,
     "Cliff": cliff,
     "AshSeal": rune,
+    "FallenMasonry": debris,
 }
 
 
