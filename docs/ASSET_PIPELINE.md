@@ -42,8 +42,23 @@ Depois de gerar `Rock.fbx` pelo README e rodar o bootstrap, confirme que a Unity
   -logFile "$PWD/Logs/unity-fbx.log"
 ```
 
+## Fallen Knight
+
+A folha de conceito e o `.blend` editável ficam em `ArtSource/Characters/`. A arena consome o FBX versionado, com o esqueleto, os pesos e a pintura por vértice. Use o comando abaixo com Blender 4.5 LTS.
+
+```bash
+blender --background --python-exit-code 1 \
+  --python Tools/Blender/scripts/fallen_knight.py -- \
+  --blend ArtSource/Characters/FallenKnight.blend \
+  --fbx Assets/_Game/Art/Characters/FallenKnightSkinned.fbx
+```
+
+O script verifica a malha, a cobertura dos pesos e as cores antes e depois da exportação. Preserve o `.meta` do FBX ao regenerar. Execute o bootstrap da arena para integrar um projeto que ainda usa o modelo anterior. O Editor verifica o skin e lê os slots de material do FBX para aplicar a paleta URP.
+
+O FBX carrega a pose de repouso e a deformação. A Unity controla a caminhada, o manto e o golpe pelos ossos; o encaixe `SwordGrip` move a espada que o jogo já usa. Preserve os nomes dos ossos e dos materiais ao editar o modelo.
+
 ## Meshy opcional
 
 Considere Meshy para personagens e criaturas que justifiquem uma etapa de geração. O serviço documenta exportação em FBX e GLB, e os formatos e limites variam conforme o fluxo e o plano. Para produção comercial, registre a origem e as condições de licença de cada modelo. A página de planos informa CC BY 4.0 para modelos gerados no plano gratuito, com atribuição. [Formatos de exportação do Meshy](https://docs.meshy.ai/en/webapp/guides/platform/export-formats), [Planos e licenças](https://www.meshy.ai/pricing)
 
-Para personagens, avalie topologia, orçamento, UVs, texturas, pesos de skinning, rig, clips e desempenho como etapas próprias. O pipeline de cenário rejeita armatures, animações e shape keys. A validação de personagens e a preparação dos clips ainda estão em aberto.
+Para personagens, avalie topologia, orçamento, UVs, texturas, pesos de skinning, rig, clips e desempenho como etapas próprias. O pipeline de cenário rejeita armatures, animações e shape keys.

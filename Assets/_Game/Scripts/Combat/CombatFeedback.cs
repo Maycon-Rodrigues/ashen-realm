@@ -13,12 +13,14 @@ namespace AshenRealm
         [SerializeField] private AudioClip hit;
 
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+        private static readonly int HitFlash = Shader.PropertyToID("_HitFlash");
         private readonly Color hurtColor = new(1f, 0.79f, 0.57f);
         private MaterialPropertyBlock properties;
         private Health health;
         private PlayerCombat player;
         private EnemyAI enemy;
         private Color bodyColor;
+        private bool paintedBody;
         private Quaternion restPose;
         private Quaternion restArm;
         private Vector3 strikeAxis;
@@ -34,6 +36,7 @@ namespace AshenRealm
             {
                 properties = new MaterialPropertyBlock();
                 bodyColor = body.sharedMaterial.GetColor(BaseColor);
+                paintedBody = body is SkinnedMeshRenderer && body.sharedMaterial.HasProperty(HitFlash);
             }
             if (pose)
                 restPose = pose.localRotation;
@@ -94,10 +97,15 @@ namespace AshenRealm
             if (body)
             {
                 float flash = 1f - Mathf.Clamp01((Time.time - lastHurt) / 0.16f);
-                Color tint = enemy && preparation >= 0f
-                    ? Color.Lerp(bodyColor, new Color(1f, 0.41f, 0.13f), 0.25f + preparation * 0.45f)
-                    : bodyColor;
-                properties.SetColor(BaseColor, Color.Lerp(tint, hurtColor, flash));
+                if (paintedBody)
+                    properties.SetFloat(HitFlash, flash);
+                else
+                {
+                    Color tint = enemy && preparation >= 0f
+                        ? Color.Lerp(bodyColor, new Color(1f, 0.41f, 0.13f), 0.25f + preparation * 0.45f)
+                        : bodyColor;
+                    properties.SetColor(BaseColor, Color.Lerp(tint, hurtColor, flash));
+                }
                 body.SetPropertyBlock(properties);
             }
 

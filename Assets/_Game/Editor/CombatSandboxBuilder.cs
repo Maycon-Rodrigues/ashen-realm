@@ -44,7 +44,9 @@ namespace AshenRealm.Editor
 
             UpgradeCombatPresentation();
             UpgradeSandboxProgression();
-            if (CombatSandboxArt.Apply() && !EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), ScenePath))
+            bool artChanged = CombatSandboxArt.Apply();
+            bool knightChanged = CombatSandboxKnight.Apply();
+            if ((artChanged || knightChanged) && !EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), ScenePath))
                 throw new IOException("Could not save the art pass in " + ScenePath);
 
             if (!EditorBuildSettings.scenes.Any(scene => scene.path == ScenePath))

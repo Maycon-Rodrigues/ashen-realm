@@ -41,6 +41,20 @@ namespace AshenRealm.Tests
                 Assert.That(camera, Is.Not.Null);
                 Assert.That(enemy.GetComponent<NavMeshAgent>().isOnNavMesh, Is.True);
 
+                Assert.That(movement.GetComponent<FallenKnightMotion>(), Is.Not.Null);
+                var knight = movement.transform.Find("Fallen Knight Painted Rig");
+                Assert.That(knight, Is.Not.Null);
+                var skin = knight.GetComponentInChildren<SkinnedMeshRenderer>();
+                Assert.That(skin, Is.Not.Null);
+                Assert.That(skin.sharedMesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color), Is.True);
+                var thigh = System.Array.Find(skin.bones, bone => bone.name == "Thigh.L");
+                Assert.That(thigh, Is.Not.Null);
+                Quaternion thighRest = thigh.localRotation;
+                var grip = System.Array.Find(knight.GetComponentsInChildren<Transform>(), bone => bone.name == "SwordGrip");
+                var blade = movement.transform.Find("Blade Pivot");
+                Assert.That(grip, Is.Not.Null);
+                Assert.That(blade, Is.Not.Null);
+
                 var playerHealth = movement.GetComponent<Health>();
                 var combat = movement.GetComponent<PlayerCombat>();
                 var enemyHealth = enemy.GetComponent<Health>();
@@ -57,7 +71,14 @@ namespace AshenRealm.Tests
                 Vector3 forward = Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up).normalized;
                 Vector3 right = Vector3.Cross(Vector3.up, forward);
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W, Key.D));
-                yield return new WaitForSeconds(0.85f);
+                float walkUntil = Time.time + 0.85f;
+                bool sawStep = false;
+                while (Time.time < walkUntil)
+                {
+                    sawStep |= Quaternion.Angle(thighRest, thigh.localRotation) > 8f;
+                    yield return null;
+                }
+                Assert.That(sawStep, Is.True, "The player skin must animate while moving.");
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState());
                 yield return null;
                 Vector3 displacement = movement.transform.position - originalPlayer;
@@ -108,6 +129,7 @@ namespace AshenRealm.Tests
                 enemyHealth.Died += () => deaths++;
                 for (int strike = 1; strike <= 3; strike++)
                 {
+                    Quaternion bladeRest = blade.localRotation;
                     Vector3 towards = enemy.transform.position - movement.transform.position;
                     movement.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(towards, Vector3.up));
                     if (strike == 2)
@@ -121,6 +143,8 @@ namespace AshenRealm.Tests
                     Assert.That(combat.TryAttack(), Is.False);
                     yield return new WaitForSeconds(0.22f);
                     Assert.That(enemyHealth.CurrentHealth, Is.EqualTo(Mathf.Max(0, 45 - strike * 20)));
+                    Assert.That(Quaternion.Angle(bladeRest, blade.localRotation), Is.GreaterThan(15f));
+                    Assert.That(Vector3.Distance(blade.position, grip.position), Is.LessThan(0.025f));
                     InputSystem.QueueStateEvent(mouse, new MouseState());
                     InputSystem.QueueStateEvent(gamepad, new GamepadState());
                     yield return new WaitForSeconds(0.55f);
