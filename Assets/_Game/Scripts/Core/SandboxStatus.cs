@@ -10,6 +10,7 @@ namespace AshenRealm
         [SerializeField] private Health enemy;
 
         private EnemyAI enemyCombat;
+        private SandboxProgression progression;
         private InputAction restart;
         private bool restarting;
         private bool EncounterEnded => player && enemy && (!player.IsAlive || !enemy.IsAlive);
@@ -18,6 +19,7 @@ namespace AshenRealm
         {
             if (enemy)
                 enemyCombat = enemy.GetComponent<EnemyAI>();
+            progression = GetComponent<SandboxProgression>();
             restart = new InputAction("Restart", InputActionType.Button, "<Keyboard>/r");
             restart.AddBinding("<Gamepad>/start");
         }
@@ -38,7 +40,10 @@ namespace AshenRealm
                 return;
 
             restarting = true;
-            SceneManager.LoadSceneAsync(gameObject.scene.buildIndex);
+            var sword = progression ? progression.State : SwordState.Locked;
+            var reload = SceneManager.LoadSceneAsync(gameObject.scene.buildIndex);
+            if (sword is SwordState.Collected or SwordState.Equipped)
+                reload.completed += _ => FindAnyObjectByType<SandboxProgression>()?.Restore(sword);
         }
 
         private void OnGUI()
@@ -46,11 +51,32 @@ namespace AshenRealm
             if (!player || !enemy)
                 return;
 
-            GUILayout.BeginArea(new Rect(16, 16, 320, 134), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(16, 16, 350, 180), GUI.skin.box);
             GUILayout.Label($"Cavaleiro  {player.CurrentHealth}/{player.MaxHealth} HP");
             GUILayout.Label($"Corrompido  {enemy.CurrentHealth}/{enemy.MaxHealth} HP");
             GUILayout.Label("WASD / Analógico esquerdo · Mover");
             GUILayout.Label("Clique esquerdo / Botão oeste · Atacar");
+            if (progression)
+            {
+                GUILayout.Label($"Dano por golpe  {progression.Damage}");
+                switch (progression.State)
+                {
+                    case SwordState.Locked:
+                        GUILayout.Label("Derrote o Corrompido para obter a Lâmina de Cinza");
+                        break;
+                    case SwordState.Dropped:
+                        GUILayout.Label(progression.CanCollect
+                            ? "E / Botão sul · Pegar Lâmina de Cinza"
+                            : "Aproxime-se da lâmina caída");
+                        break;
+                    case SwordState.Collected:
+                        GUILayout.Label("Q / Botão norte · Equipar Lâmina de Cinza");
+                        break;
+                    case SwordState.Equipped:
+                        GUILayout.Label("Lâmina de Cinza equipada");
+                        break;
+                }
+            }
             if (enemyCombat && enemyCombat.IsWindingUp)
                 GUILayout.Label("Golpe iminente · Saia da área marcada");
             GUILayout.EndArea();
@@ -58,10 +84,10 @@ namespace AshenRealm
             if (!EncounterEnded)
                 return;
 
-            var panel = new Rect((Screen.width - 280) / 2f, (Screen.height - 108) / 2f, 280, 108);
+            var panel = new Rect((Screen.width - 280) / 2f, Screen.height - 114, 280, 98);
             GUILayout.BeginArea(panel, GUI.skin.box);
             GUILayout.Label(player.IsAlive ? "Vitória" : "Derrota");
-            GUILayout.Label("R / Start · Tentar de novo");
+            GUILayout.Label(player.IsAlive ? "R / Start · Próximo encontro" : "R / Start · Tentar de novo");
             if (GUILayout.Button("Reiniciar encontro"))
                 Restart();
             GUILayout.EndArea();

@@ -12,7 +12,7 @@ namespace AshenRealm.Tests
     public sealed class CombatSandboxTests
     {
         [UnityTest]
-        public IEnumerator PlayerDodgesDefeatsAndRestartsEncounter()
+        public IEnumerator LootChangesDamageInTheNextEncounter()
         {
             var settings = InputSystem.settings;
             var backgroundBehavior = settings.backgroundBehavior;
@@ -120,6 +120,11 @@ namespace AshenRealm.Tests
                 Assert.That(enemy.gameObject.activeSelf, Is.False);
                 Assert.That(enemyHealth.TakeDamage(20), Is.False);
 
+                var progression = Object.FindAnyObjectByType<SandboxProgression>();
+                Assert.That(progression.State, Is.EqualTo(SwordState.Dropped));
+                Assert.That(progression.Damage, Is.EqualTo(20));
+                Assert.That(progression.CanCollect, Is.True);
+
                 var beforeStick = movement.transform.position;
                 InputSystem.QueueStateEvent(gamepad, new GamepadState { leftStick = Vector2.left });
                 yield return new WaitForSeconds(0.3f);
@@ -127,15 +132,65 @@ namespace AshenRealm.Tests
                 yield return null;
                 Assert.That(Vector3.Dot(movement.transform.position - beforeStick, -right), Is.GreaterThan(0.5f));
 
+                MovePlayer(movement, originalPlayer);
+                Assert.That(progression.CanCollect, Is.False);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.E, Key.Q));
+                yield return null;
+                yield return null;
+                Assert.That(progression.State, Is.EqualTo(SwordState.Dropped));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+
+                MovePlayer(movement, beforeStick);
+                Assert.That(progression.CanCollect, Is.True);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.E));
+                yield return null;
+                yield return null;
+                Assert.That(progression.State, Is.EqualTo(SwordState.Collected));
+                Assert.That(progression.Damage, Is.EqualTo(20));
+                InputSystem.QueueStateEvent(gamepad, new GamepadState().WithButton(GamepadButton.North));
+                yield return null;
+                yield return null;
+                Assert.That(progression.State, Is.EqualTo(SwordState.Equipped));
+                Assert.That(progression.Damage, Is.EqualTo(25));
+                InputSystem.QueueStateEvent(gamepad, new GamepadState());
+
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.R));
                 yield return WaitForRestart(playerHealth);
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState());
 
-                var restartedPlayer = Object.FindAnyObjectByType<PlayerController>().GetComponent<Health>();
+                movement = Object.FindAnyObjectByType<PlayerController>();
+                combat = movement.GetComponent<PlayerCombat>();
+                enemy = Object.FindAnyObjectByType<EnemyAI>();
+                enemyHealth = enemy.GetComponent<Health>();
+                progression = Object.FindAnyObjectByType<SandboxProgression>();
+                Assert.That(progression.State, Is.EqualTo(SwordState.Equipped));
+                Assert.That(progression.Damage, Is.EqualTo(25));
+                Assert.That(movement.transform.Find("Blade Pivot/Sword blade").GetComponent<Renderer>()
+                    .sharedMaterial.name, Is.EqualTo("AshenBlade"));
+
+                MovePlayer(movement, enemy.transform.position - Vector3.right * 1.5f);
+                movement.transform.rotation = Quaternion.LookRotation(Vector3.right);
+                Assert.That(combat.TryAttack(), Is.True);
+                yield return new WaitForSeconds(0.48f);
+                Assert.That(enemyHealth.CurrentHealth, Is.EqualTo(20));
+                Assert.That(combat.TryAttack(), Is.True);
+                yield return new WaitForSeconds(0.22f);
+                Assert.That(enemyHealth.IsAlive, Is.False);
+                Assert.That(progression.State, Is.EqualTo(SwordState.Equipped), "The reward should be granted once.");
+
+                var restartedPlayer = movement.GetComponent<Health>();
+                InputSystem.QueueStateEvent(gamepad, new GamepadState().WithButton(GamepadButton.Start));
+                yield return WaitForRestart(restartedPlayer);
+                InputSystem.QueueStateEvent(gamepad, new GamepadState());
+                yield return null;
+
+                restartedPlayer = Object.FindAnyObjectByType<PlayerController>().GetComponent<Health>();
                 restartedPlayer.TakeDamage(restartedPlayer.MaxHealth);
                 InputSystem.QueueStateEvent(gamepad, new GamepadState().WithButton(GamepadButton.Start));
                 yield return WaitForRestart(restartedPlayer);
                 InputSystem.QueueStateEvent(gamepad, new GamepadState());
+                Assert.That(Object.FindAnyObjectByType<SandboxProgression>().Damage, Is.EqualTo(25));
                 LogAssert.NoUnexpectedReceived();
             }
             finally
@@ -149,6 +204,15 @@ namespace AshenRealm.Tests
                 settings.editorInputBehaviorInPlayMode = editorInputBehavior;
 #endif
             }
+        }
+
+        private static void MovePlayer(PlayerController player, Vector3 position)
+        {
+            var motor = player.GetComponent<CharacterController>();
+            motor.enabled = false;
+            player.transform.position = position;
+            motor.enabled = true;
+            Physics.SyncTransforms();
         }
 
         private static IEnumerator WaitForRestart(Health previousPlayer)

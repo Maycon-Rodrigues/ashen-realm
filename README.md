@@ -21,6 +21,8 @@ export UNITY_EDITOR="/caminho/para/Editor/Unity"
 
 Pressione **Play**. Mova-se com **WASD** ou o **analógico esquerdo**. Vire o personagem na direção do inimigo e ataque com **clique esquerdo** ou o **botão oeste** do gamepad. Saia da área laranja quando o inimigo preparar o golpe. Depois de vencer ou perder, pressione **R** ou **Start** para tentar de novo.
 
+Na primeira vitória, aproxime-se da **Lâmina de Cinza** e pressione **E** ou o **botão sul** para pegar. Pressione **Q** ou o **botão norte** para equipar. Reinicie com **R** ou **Start** e compare o número de golpes na próxima luta.
+
 O checkout inclui a cena, a NavMesh, as configurações do Unity e o lock dos pacotes. No Editor, o menu **Ashen Realm → Open or Generate Combat Sandbox** reabre a cena ou cria uma nova se ela estiver ausente. Com o Editor gráfico fechado, `./Tools/Unity/bootstrap.sh` executa o mesmo fluxo pelo terminal.
 
 ## Gerar modelos
@@ -31,4 +33,4 @@ blender --background --python-exit-code 1 \
   --output-dir Assets/_Game/Art/Generated --verify
 ```
 
-O Blender portátil 4.5.3 foi executado com sucesso no Omarchy. Consulte os [resultados do Sprint 02](docs/SPRINT_02.md), a [arquitetura](docs/ARCHITECTURE.md) e o [pipeline de assets](docs/ASSET_PIPELINE.md).
+O Blender portátil 4.5.3 foi executado com sucesso no Omarchy. Consulte os [resultados do Sprint 03](docs/SPRINT_03.md), a [arquitetura](docs/ARCHITECTURE.md) e o [pipeline de assets](docs/ASSET_PIPELINE.md).

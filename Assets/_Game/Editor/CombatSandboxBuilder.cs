@@ -37,6 +37,7 @@ namespace AshenRealm.Editor
                 EditorSceneManager.OpenScene(ScenePath);
 
             UpgradeCombatPresentation();
+            UpgradeSandboxProgression();
 
             if (!EditorBuildSettings.scenes.Any(scene => scene.path == ScenePath))
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes
@@ -44,6 +45,43 @@ namespace AshenRealm.Editor
 
             AssetDatabase.SaveAssets();
             Debug.Log("Ashen Realm: CombatSandbox ready at " + ScenePath);
+        }
+
+        private static void UpgradeSandboxProgression()
+        {
+            var scene = EditorSceneManager.GetActiveScene();
+            var roots = scene.GetRootGameObjects();
+            var hud = roots.Single(root => root.TryGetComponent<SandboxStatus>(out _));
+            if (hud.TryGetComponent<SandboxProgression>(out _))
+                return;
+
+            var player = roots.Select(root => root.GetComponent<PlayerCombat>()).Single(combat => combat);
+            var enemy = roots.Single(root => root.TryGetComponent<EnemyAI>(out _));
+            var blade = player.transform.Find("Blade Pivot/Sword blade").GetComponent<Renderer>();
+            var reward = Material("AshenBlade", new Color(0.16f, 0.84f, 0.72f), "Universal Render Pipeline/Unlit");
+            var drop = new GameObject("Ashen Blade Drop").transform;
+            drop.SetParent(hud.transform, false);
+            var sword = new GameObject("Loot Sword").transform;
+            sword.SetParent(drop, false);
+            sword.localRotation = Quaternion.Euler(-25f, 0f, -24f);
+            Primitive("Blade", PrimitiveType.Cube, sword, new Vector3(0f, 0.48f, 0f),
+                new Vector3(0.15f, 0.80f, 0.11f), reward, false);
+            Primitive("Crossguard", PrimitiveType.Cube, sword, new Vector3(0f, 0.10f, 0f),
+                new Vector3(0.39f, 0.10f, 0.10f), reward, false);
+            Primitive("Grip", PrimitiveType.Cube, sword, new Vector3(0f, -0.04f, 0f),
+                new Vector3(0.11f, 0.24f, 0.10f), reward, false);
+            drop.gameObject.SetActive(false);
+
+            var progression = hud.AddComponent<SandboxProgression>();
+            SetReference(progression, "player", player);
+            SetReference(progression, "playerHealth", player.GetComponent<Health>());
+            SetReference(progression, "enemy", enemy.GetComponent<Health>());
+            SetReference(progression, "drop", drop);
+            SetReference(progression, "blade", blade);
+            SetReference(progression, "upgradedBlade", reward);
+
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+                throw new IOException("Could not save the progression setup in " + ScenePath);
         }
 
         private static void UpgradeCombatPresentation()

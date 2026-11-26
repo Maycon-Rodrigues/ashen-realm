@@ -22,6 +22,8 @@ namespace AshenRealm
         private float impactAt;
         private float nextAttack;
         private bool pendingStrike;
+        public int DamageBonus { private get; set; }
+        public int Damage => damage + DamageBonus;
         public bool IsAttacking => health.IsAlive && Time.time < nextAttack;
         public float WindupProgress => pendingStrike ? 1f - Mathf.Clamp01((impactAt - Time.time) / windup) : -1f;
         public event Action Attacked;
@@ -78,7 +80,7 @@ namespace AshenRealm
 
                 Vector3 direction = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up);
                 if (Vector3.Angle(strikeDirection, direction) <= arc * 0.5f && hit.Add(target))
-                    target.TakeDamage(damage);
+                    target.TakeDamage(Damage);
             }
 
             Attacked?.Invoke();
