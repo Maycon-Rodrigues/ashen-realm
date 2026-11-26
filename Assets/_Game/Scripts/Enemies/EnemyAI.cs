@@ -20,6 +20,7 @@ namespace AshenRealm
         private float nextAttack;
         public bool IsWindingUp { get; private set; }
         public float WindupProgress => IsWindingUp ? 1f - Mathf.Clamp01((impactAt - Time.time) / windup) : -1f;
+        public float DetectionRadius => detectionRadius;
         public float AttackDistance => attackDistance;
         public float AttackArc => attackArc;
         public event Action Attacked;

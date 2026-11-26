@@ -13,20 +13,20 @@ namespace AshenRealm.Editor
         private const string ModelFolder = "Assets/_Game/Art/VerticalSlice";
         private static readonly Dictionary<string, Color> Palette = new()
         {
-            ["Iron"] = new Color(0.14f, 0.23f, 0.32f),
-            ["Steel"] = new Color(0.32f, 0.52f, 0.67f),
+            ["Iron"] = new Color(0.16f, 0.20f, 0.24f),
+            ["Steel"] = new Color(0.31f, 0.38f, 0.44f),
             ["Brass"] = new Color(0.72f, 0.52f, 0.27f),
             ["Leather"] = new Color(0.26f, 0.15f, 0.10f),
             ["Spirit"] = new Color(0.15f, 0.82f, 0.73f),
-            ["Mantle"] = new Color(0.15f, 0.41f, 0.34f),
-            ["Carapace"] = new Color(0.46f, 0.22f, 0.17f),
-            ["Hide"] = new Color(0.63f, 0.32f, 0.24f),
+            ["Mantle"] = new Color(0.15f, 0.33f, 0.29f),
+            ["Carapace"] = new Color(0.34f, 0.20f, 0.18f),
+            ["Hide"] = new Color(0.50f, 0.30f, 0.25f),
             ["Bone"] = new Color(0.76f, 0.65f, 0.48f),
             ["Ember"] = new Color(1f, 0.40f, 0.19f),
             ["Stone"] = new Color(0.35f, 0.37f, 0.39f),
             ["Slate"] = new Color(0.28f, 0.30f, 0.34f),
-            ["Moss"] = new Color(0.26f, 0.33f, 0.28f),
-            ["Path"] = new Color(0.46f, 0.45f, 0.40f)
+            ["Moss"] = new Color(0.27f, 0.31f, 0.28f),
+            ["Path"] = new Color(0.40f, 0.39f, 0.35f)
         };
 
         public static bool Apply()
@@ -251,7 +251,12 @@ namespace AshenRealm.Editor
                 material.shader = resolved;
             material.color = color;
             if (material.HasProperty("_Rim"))
-                material.SetFloat("_Rim", name is "Iron" or "Steel" or "Carapace" ? 0.25f : 0.045f);
+            {
+                bool metal = name is "Iron" or "Steel" or "Brass";
+                material.SetFloat("_Rim", metal ? 0.24f : 0.035f);
+                material.SetFloat("_Polish", name == "Steel" ? 0.31f : metal ? 0.15f : 0f);
+                material.SetFloat("_Grain", metal ? 0.25f : 0.53f);
+            }
             EditorUtility.SetDirty(material);
             return material;
         }

@@ -13,15 +13,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from environment import export, finish, import_asset, material, meshes, normalize, reset, validate
 
 
-def plate(name, center, size, surface, bevel=0.035, tilt=0):
+def plate(name, center, size, surface, bevel=0.035, tilt=0, segments=1):
     bpy.ops.mesh.primitive_cube_add(size=1, location=center)
     obj = finish(f"{surface}.{name}", size, PALETTE[surface])
     obj.rotation_euler.y = tilt
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     modifier = obj.modifiers.new("Edge", "BEVEL")
     modifier.width = min(bevel, min(size) * 0.38)
-    modifier.segments = 1
+    modifier.segments = segments
     bpy.ops.object.modifier_apply(modifier=modifier.name)
+    if segments > 1:
+        for polygon in obj.data.polygons:
+            polygon.use_smooth = True
+        normals = obj.modifiers.new("Keep plate faces flat", "WEIGHTED_NORMAL")
+        bpy.ops.object.modifier_apply(modifier=normals.name)
     return obj
 
 
@@ -30,12 +35,24 @@ def facet(name, center, size, surface, detail=1):
     return finish(f"{surface}.{name}", size, PALETTE[surface])
 
 
-def taper(name, start, end, radius, tip, surface, sides=5):
+def sculpt(name, center, size, surface, pitch=0, roll=0):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=1, location=center)
+    obj = finish(f"{surface}.{name}", size, PALETTE[surface])
+    obj.rotation_euler = (pitch, roll, 0)
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = True
+    return obj
+
+
+def taper(name, start, end, radius, tip, surface, sides=5, smooth=False):
     vector = Vector(end) - Vector(start)
     bpy.ops.mesh.primitive_cone_add(vertices=sides, radius1=radius, radius2=tip,
                                    depth=vector.length, location=Vector(start) + vector * 0.5)
     obj = finish(f"{surface}.{name}", (1, 1, 1), PALETTE[surface])
     obj.rotation_euler = vector.to_track_quat("Z", "Y").to_euler()
+    if smooth:
+        for polygon in obj.data.polygons:
+            polygon.use_smooth = len(polygon.vertices) == 4
     return obj
 
 
@@ -49,34 +66,59 @@ def poly(name, points, faces, surface):
     return obj
 
 
+def curved_limb(name, profile, surface):
+    sides = 14
+    centers = [Vector(point) for point, _ in profile]
+    points = []
+    for index, (center, (_, radius)) in enumerate(zip(centers, profile)):
+        tangent = (centers[min(index + 1, len(centers) - 1)] -
+                   centers[max(index - 1, 0)]).normalized()
+        right = tangent.cross(Vector((0, 1, 0))).normalized()
+        up = tangent.cross(right)
+        for side in range(sides):
+            angle = side * math.tau / sides
+            points.append(center + radius * (math.cos(angle) * right + math.sin(angle) * up))
+
+    faces = [tuple(reversed(range(sides)))]
+    for start in range(0, (len(profile) - 1) * sides, sides):
+        for side in range(sides):
+            neighbor = (side + 1) % sides
+            faces.append((start + side, start + neighbor, start + neighbor + sides, start + side + sides))
+    faces.append(tuple(range(len(points) - sides, len(points))))
+    obj = poly(name, points, faces, surface)
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = len(polygon.vertices) == 4
+
+
 def knight():
     for side in (-1, 1):
         leg = "LeftLeg" if side < 0 else "RightLeg"
         x = side * 0.19
-        plate(leg + "Boot", (x, -0.10, 0.14), (0.23, 0.39, 0.26), "Iron")
-        plate(leg + "Greave", (x, -0.035, 0.38), (0.20, 0.22, 0.38), "Steel")
+        plate(leg + "Boot", (x, -0.10, 0.14), (0.22, 0.37, 0.25), "Iron", segments=3)
+        plate(leg + "Greave", (x, -0.035, 0.38), (0.19, 0.23, 0.40), "Steel", bevel=0.048, segments=3)
         plate(leg + "Thigh", (x, 0.02, 0.69), (0.23, 0.26, 0.33), "Iron")
-        facet(leg + "Knee", (x, -0.14, 0.51), (0.14, 0.09, 0.12), "Steel")
+        sculpt(leg + "Knee", (x, -0.136, 0.50), (0.12, 0.10, 0.115), "Steel")
         width = 0.37 if side < 0 else 0.29
-        for layer in range(3):
+        for layer in range(2):
             plate("Pauldron", (side * (0.34 + layer * 0.043), 0.005, 1.42 - layer * 0.064),
-                  (width - layer * 0.042, 0.38 - layer * 0.035, 0.145), "Steel", tilt=side * 0.48)
-        plate("Arm", (side * 0.46, -0.01, 1.17), (0.20, 0.21, 0.32), "Iron", tilt=side * -0.15)
-        plate("Gauntlet", (side * 0.46, -0.12, 1.02), (0.19, 0.31, 0.19), "Steel")
+                  (width - layer * 0.042, 0.37 - layer * 0.035, 0.166), "Steel",
+                  bevel=0.056, tilt=side * 0.43, segments=3)
+        plate("Arm", (side * 0.46, -0.01, 1.17), (0.19, 0.21, 0.36), "Iron", tilt=side * -0.15, segments=3)
+        plate("Gauntlet", (side * 0.46, -0.12, 1.02), (0.18, 0.31, 0.19), "Steel", bevel=0.045, segments=3)
 
     plate("Cuisses", (0, 0.018, 0.87), (0.54, 0.36, 0.22), "Iron")
     plate("Belt", (0, -0.012, 0.99), (0.58, 0.41, 0.12), "Leather")
     plate("Buckle", (0, -0.228, 0.99), (0.15, 0.05, 0.12), "Brass")
-    facet("Chest", (0, -0.015, 1.25), (0.41, 0.28, 0.34), "Steel", 2)
+    sculpt("Chest", (0, -0.035, 1.265), (0.37, 0.255, 0.35), "Steel", pitch=0.08)
     for layer in range(3):
         plate("Lame", (0, -0.19 + layer * 0.01, 1.23 - layer * 0.074),
-              (0.53 - 0.057 * layer, 0.14, 0.11), "Steel", tilt=-0.04)
+              (0.50 - 0.05 * layer, 0.13, 0.095), "Steel", tilt=-0.04, segments=2)
     plate("Neck", (0, 0.01, 1.51), (0.26, 0.29, 0.16), "Iron")
-    facet("Helm", (0, 0.025, 1.72), (0.217, 0.31, 0.28), "Steel", 2)
-    taper("SalletTail", (0, 0.15, 1.67), (0, 0.42, 1.51), 0.18, 0.09, "Steel", 6)
-    plate("Faceplate", (0, -0.247, 1.66), (0.36, 0.18, 0.14), "Iron", bevel=0.031)
+    sculpt("Helm", (0, 0.015, 1.73), (0.193, 0.29, 0.265), "Steel", pitch=-0.16)
+    taper("SalletTail", (0, 0.15, 1.67), (0, 0.42, 1.51), 0.154, 0.069, "Steel", 12, smooth=True)
+    plate("Faceplate", (0, -0.247, 1.66), (0.315, 0.18, 0.139), "Iron", bevel=0.041, segments=3)
     plate("Bevor", (0, -0.202, 1.565), (0.27, 0.20, 0.13), "Steel", bevel=0.046)
-    plate("FacingVisor", (0, -0.344, 1.687), (0.185, 0.028, 0.025), "Spirit", bevel=0.008)
+    plate("FacingVisor", (0, -0.344, 1.687), (0.148, 0.027, 0.018), "Spirit", bevel=0.006)
     plate("Crest", (0, -0.005, 1.979), (0.044, 0.24, 0.046), "Brass", bevel=0.014)
     plate("MantleClasp", (-0.22, -0.227, 1.39), (0.13, 0.042, 0.14), "Brass")
     plate("Shield", (-0.49, -0.22, 1.02), (0.35, 0.11, 0.55), "Iron", bevel=0.085, tilt=0.20)
@@ -87,6 +129,12 @@ def knight():
          [(0, 7, 1), (0, 6, 7), (1, 7, 2), (2, 7, 3), (3, 7, 4), (4, 7, 5),
           (5, 7, 6)], "Mantle")
     bpy.context.view_layer.objects.active = cape
+    for polygon in cape.data.polygons:
+        polygon.use_smooth = True
+    drape = cape.modifiers.new("Drape folds", "SUBSURF")
+    drape.subdivision_type = "CATMULL_CLARK"
+    drape.levels = 2
+    bpy.ops.object.modifier_apply(modifier=drape.name)
     cloth = cape.modifiers.new("Cloth thickness", "SOLIDIFY")
     cloth.thickness = 0.018
     bpy.ops.object.modifier_apply(modifier=cloth.name)
@@ -96,18 +144,20 @@ def grunt():
     for side in (-1, 1):
         leg = "LeftLeg" if side < 0 else "RightLeg"
         x = side * 0.25
-        facet(leg + "Paw", (x, -0.15, 0.16), (0.17, 0.28, 0.16), "Carapace", 2)
-        taper(leg + "Shin", (x, -0.02, 0.16), (x, 0.10, 0.56), 0.12, 0.18, "Hide")
-        taper(leg + "Thigh", (x, 0.10, 0.55), (x * 0.8, 0.08, 0.93), 0.18, 0.22, "Carapace")
+        sculpt(leg + "Paw", (x, -0.15, 0.16), (0.16, 0.27, 0.15), "Carapace")
+        taper(leg + "Shin", (x, -0.02, 0.16), (x, 0.10, 0.56), 0.12, 0.18, "Hide", 12, smooth=True)
+        taper(leg + "Thigh", (x, 0.10, 0.55), (x * 0.8, 0.08, 0.93), 0.18, 0.22, "Carapace", 12, smooth=True)
         prefix = "StrikeArm" if side > 0 else "SupportArm"
         size = 1.34 if side > 0 else 0.82
         shoulder = (side * 0.44, 0.08, 1.31)
         elbow = (side * 0.60, -0.08, 0.91)
         fist = (side * (0.68 if side > 0 else 0.53), -0.38, 0.49 if side > 0 else 0.68)
-        facet(prefix + "Shoulder", shoulder, (0.24 * size, 0.27, 0.26), "Carapace", 1)
-        taper(prefix + "Upper", shoulder, elbow, 0.21 * size, 0.13 * size, "Hide")
-        taper(prefix + "Forearm", elbow, fist, 0.155 * size, 0.23 * size, "Carapace")
-        facet(prefix + "Fist", fist, (0.17 * size, 0.22 * size, 0.14 * size), "Carapace", 1)
+        sculpt(prefix + "Shoulder", shoulder, (0.235 * size, 0.27, 0.29), "Carapace", roll=side * 0.45)
+        upper = Vector(shoulder).lerp(Vector(elbow), 0.48)
+        forearm = Vector(elbow).lerp(Vector(fist), 0.57)
+        curved_limb(prefix + "Muscle", ((shoulder, 0.16 * size), (upper, 0.193 * size),
+                    (elbow, 0.141 * size), (forearm, 0.193 * size), (fist, 0.151 * size)), "Hide")
+        sculpt(prefix + "Fist", fist, (0.174 * size, 0.20 * size, 0.15 * size), "Carapace")
         taper(prefix + "Ridge", (elbow[0], -0.16, 0.87),
               (side * 0.83, -0.19, 0.97), 0.068 * size, 0.009, "Bone")
         for claw in range(3):
@@ -116,17 +166,17 @@ def grunt():
                   (x_claw, -0.66, fist[2] - 0.15), 0.032 * size, 0.007, "Bone")
         start = (side * 0.20, -0.20, 1.60)
         bend = (side * (0.35 if side < 0 else 0.45), -0.13, 1.69)
-        taper("AntlerBase", start, bend, 0.11, 0.069, "Bone")
-        taper("AntlerTip", bend, (side * 0.49, 0.12, 1.86 if side < 0 else 1.76), 0.071, 0.009, "Bone")
+        taper("AntlerBase", start, bend, 0.105, 0.069, "Bone", 10, smooth=True)
+        taper("AntlerTip", bend, (side * 0.49, 0.12, 1.86 if side < 0 else 1.76), 0.071, 0.009, "Bone", 10, smooth=True)
         for level in range(3):
             z = 0.99 + level * 0.105
             taper("Rib", (side * 0.085, -0.30, z), (side * 0.31, -0.20, z + 0.08), 0.049, 0.022, "Carapace")
 
-    facet("Spine", (0, 0.18, 1.16), (0.51, 0.37, 0.50), "Carapace", 2)
-    facet("Chest", (0, -0.035, 1.19), (0.45, 0.32, 0.39), "Hide", 2)
-    facet("Core", (0, -0.31, 1.13), (0.13, 0.10, 0.21), "Ember", 2)
-    facet("Skull", (0, -0.33, 1.43), (0.26, 0.31, 0.20), "Carapace", 2)
-    facet("Jaw", (0, -0.47, 1.32), (0.20, 0.24, 0.12), "Hide", 2)
+    sculpt("Spine", (0, 0.18, 1.12), (0.47, 0.43, 0.49), "Carapace", pitch=0.33)
+    sculpt("Chest", (0, -0.055, 1.16), (0.405, 0.325, 0.375), "Hide", pitch=0.30)
+    facet("Core", (0, -0.336, 1.13), (0.105, 0.072, 0.135), "Ember", 2)
+    sculpt("Skull", (0, -0.34, 1.43), (0.22, 0.31, 0.20), "Carapace", pitch=0.26)
+    sculpt("Jaw", (0, -0.47, 1.32), (0.162, 0.22, 0.111), "Hide")
     for side in (-1, 1):
         plate("FacingEye" + ("A" if side < 0 else "B"), (side * 0.115, -0.588, 1.46),
               (0.10, 0.048, 0.047), "Ember", bevel=0.013, tilt=side * 0.24)

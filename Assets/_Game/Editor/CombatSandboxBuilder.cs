@@ -23,6 +23,12 @@ namespace AshenRealm.Editor
                 Generate();
         }
 
+        public static void Play()
+        {
+            Generate();
+            EditorApplication.delayCall += EditorApplication.EnterPlaymode;
+        }
+
         public static void Generate()
         {
             Directory.CreateDirectory(Output);

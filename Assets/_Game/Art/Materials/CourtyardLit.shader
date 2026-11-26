@@ -4,6 +4,8 @@ Shader "AshenRealm/Courtyard Lit"
     {
         [MainColor] _BaseColor("Base Color", Color) = (1,1,1,1)
         _Rim("Rim Strength", Range(0, 1)) = 0.18
+        _Grain("Paint Variation", Range(0, 1)) = 0.18
+        _Polish("Metal Sheen", Range(0, 1)) = 0.0
     }
 
     SubShader
@@ -28,6 +30,8 @@ Shader "AshenRealm/Courtyard Lit"
             // The borrowed URP shadow and depth passes have a different material layout.
             float4 _BaseColor;
             float _Rim;
+            float _Grain;
+            float _Polish;
 
             struct Attributes
             {
@@ -41,6 +45,7 @@ Shader "AshenRealm/Courtyard Lit"
                 float3 positionWS : TEXCOORD0;
                 half3 normalWS : TEXCOORD1;
                 half fog : TEXCOORD2;
+                float3 pigmentPosition : TEXCOORD3;
             };
 
             Varyings Vert(Attributes input)
@@ -51,7 +56,32 @@ Shader "AshenRealm/Courtyard Lit"
                 output.positionWS = position.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.fog = ComputeFogFactor(position.positionCS.z);
+                float4x4 objectToWorld = GetObjectToWorldMatrix();
+                float3 scale = float3(length(objectToWorld._m00_m10_m20),
+                    length(objectToWorld._m01_m11_m21), length(objectToWorld._m02_m12_m22));
+                output.pigmentPosition = input.positionOS.xyz * scale;
                 return output;
+            }
+
+            float Pigment(float3 position)
+            {
+                position = frac(position * 0.1031);
+                position += dot(position, position.yzx + 33.33);
+                return frac((position.x + position.y) * position.z);
+            }
+
+            float PaintNoise(float3 position)
+            {
+                float3 cell = floor(position);
+                float3 f = frac(position);
+                f = f * f * (3.0 - 2.0 * f);
+                float nearPlane = lerp(
+                    lerp(Pigment(cell), Pigment(cell + float3(1, 0, 0)), f.x),
+                    lerp(Pigment(cell + float3(0, 1, 0)), Pigment(cell + float3(1, 1, 0)), f.x), f.y);
+                float farPlane = lerp(
+                    lerp(Pigment(cell + float3(0, 0, 1)), Pigment(cell + float3(1, 0, 1)), f.x),
+                    lerp(Pigment(cell + float3(0, 1, 1)), Pigment(cell + 1), f.x), f.y);
+                return lerp(nearPlane, farPlane, f.z);
             }
 
             half4 Frag(Varyings input) : SV_Target
@@ -76,7 +106,14 @@ Shader "AshenRealm/Courtyard Lit"
 
                 half edge = 1.0h - saturate(dot(normal, view));
                 half3 rim = half3(0.23h, 0.38h, 0.54h) * edge * edge * sky * _Rim;
-                half3 result = _BaseColor.rgb * irradiance * 0.74h + rim;
+                float3 p = input.pigmentPosition;
+                half pigment = PaintNoise(p * float3(3.1, 7.3, 4.7)) * 0.72h
+                    + PaintNoise(p * 17.0) * 0.28h;
+                half3 albedo = _BaseColor.rgb * (1.0h + (pigment - 0.5h) * _Grain);
+                half3 halfDirection = SafeNormalize(view + key.direction);
+                half sheen = pow(saturate(dot(normal, halfDirection)), 24.0h)
+                    * _Polish * saturate(dot(normal, key.direction)) * key.shadowAttenuation;
+                half3 result = albedo * irradiance * 0.74h + rim + sheen * half3(0.44h, 0.53h, 0.62h);
                 return half4(MixFog(result, input.fog), 1.0h);
             }
             ENDHLSL

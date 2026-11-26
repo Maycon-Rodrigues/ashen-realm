@@ -21,6 +21,7 @@ namespace AshenRealm
         private Vector3 dropPosition;
         public SwordState State { get; private set; }
         public int Damage => player.Damage;
+        public Vector3 PickupPoint => drop.position;
         public bool CanCollect => State == SwordState.Dropped && playerHealth.IsAlive &&
             Vector3.ProjectOnPlane(player.transform.position - dropPosition, Vector3.up).sqrMagnitude <= pickupRange * pickupRange;
 

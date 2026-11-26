@@ -1,6 +1,6 @@
 # Ashen Realm
 
-Action RPG 3D isométrico para PC, single-player, com estética dark fantasy low-poly. O CombatSandbox é uma arena para testar aproximação, esquiva e contra-ataque contra um inimigo.
+Action RPG 3D isométrico para PC, single-player, com estética dark fantasy e acabamento pictórico. O CombatSandbox é uma arena para testar aproximação, esquiva e contra-ataque contra um inimigo.
 
 ## Pré-requisitos
 
