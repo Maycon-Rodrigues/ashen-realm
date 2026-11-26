@@ -7,6 +7,7 @@ namespace AshenRealm
     {
         [SerializeField] private Renderer body;
         [SerializeField] private Transform pose;
+        [SerializeField] private Transform strikingArm;
         [SerializeField] private LineRenderer warning;
         [SerializeField] private AudioClip swing;
         [SerializeField] private AudioClip hit;
@@ -19,6 +20,8 @@ namespace AshenRealm
         private EnemyAI enemy;
         private Color bodyColor;
         private Quaternion restPose;
+        private Quaternion restArm;
+        private Vector3 strikeAxis;
         private float lastImpact = float.NegativeInfinity;
         private float lastHurt = float.NegativeInfinity;
 
@@ -34,6 +37,11 @@ namespace AshenRealm
             }
             if (pose)
                 restPose = pose.localRotation;
+            if (strikingArm)
+            {
+                restArm = strikingArm.localRotation;
+                strikeAxis = strikingArm.parent.InverseTransformDirection(transform.right);
+            }
             if (warning && enemy)
                 BuildWarning();
         }
@@ -72,6 +80,15 @@ namespace AshenRealm
                         ? Mathf.Lerp(0f, windupAngle, preparation / 0.7f)
                         : Mathf.Lerp(windupAngle, impactAngle, (preparation - 0.7f) / 0.3f);
                 pose.localRotation = restPose * Quaternion.AngleAxis(angle, player ? Vector3.up : Vector3.right);
+            }
+            if (strikingArm)
+            {
+                float armAngle = Mathf.Lerp(-31f, 0f, recovery);
+                if (preparation >= 0f)
+                    armAngle = preparation < 0.78f
+                        ? Mathf.Lerp(0f, 53f, preparation / 0.78f)
+                        : Mathf.Lerp(53f, -31f, (preparation - 0.78f) / 0.22f);
+                strikingArm.localRotation = Quaternion.AngleAxis(armAngle, strikeAxis) * restArm;
             }
 
             if (body)

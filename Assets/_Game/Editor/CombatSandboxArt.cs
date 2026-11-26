@@ -13,20 +13,20 @@ namespace AshenRealm.Editor
         private const string ModelFolder = "Assets/_Game/Art/VerticalSlice";
         private static readonly Dictionary<string, Color> Palette = new()
         {
-            ["Iron"] = new Color(0.11f, 0.20f, 0.27f),
-            ["Steel"] = new Color(0.28f, 0.49f, 0.66f),
+            ["Iron"] = new Color(0.14f, 0.23f, 0.32f),
+            ["Steel"] = new Color(0.32f, 0.52f, 0.67f),
             ["Brass"] = new Color(0.72f, 0.52f, 0.27f),
             ["Leather"] = new Color(0.26f, 0.15f, 0.10f),
             ["Spirit"] = new Color(0.15f, 0.82f, 0.73f),
-            ["Mantle"] = new Color(0.09f, 0.34f, 0.28f),
-            ["Carapace"] = new Color(0.42f, 0.17f, 0.16f),
-            ["Hide"] = new Color(0.64f, 0.27f, 0.16f),
-            ["Bone"] = new Color(0.83f, 0.67f, 0.45f),
+            ["Mantle"] = new Color(0.15f, 0.41f, 0.34f),
+            ["Carapace"] = new Color(0.46f, 0.22f, 0.17f),
+            ["Hide"] = new Color(0.63f, 0.32f, 0.24f),
+            ["Bone"] = new Color(0.76f, 0.65f, 0.48f),
             ["Ember"] = new Color(1f, 0.40f, 0.19f),
-            ["Stone"] = new Color(0.31f, 0.33f, 0.34f),
-            ["Slate"] = new Color(0.25f, 0.28f, 0.31f),
-            ["Moss"] = new Color(0.22f, 0.29f, 0.26f),
-            ["Path"] = new Color(0.36f, 0.36f, 0.32f)
+            ["Stone"] = new Color(0.35f, 0.37f, 0.39f),
+            ["Slate"] = new Color(0.28f, 0.30f, 0.34f),
+            ["Moss"] = new Color(0.26f, 0.33f, 0.28f),
+            ["Path"] = new Color(0.46f, 0.45f, 0.40f)
         };
 
         public static bool Apply()
@@ -69,6 +69,7 @@ namespace AshenRealm.Editor
             arena.Find("Floor").GetComponent<Renderer>().sharedMaterial = Surface("Slate");
             DressWalls(arena);
             BuildGate(arena);
+            DressVigil(arena);
 
             var sun = roots.Single(root => root.name == "Dusk Light").GetComponent<Light>();
             sun.color = new Color(1f, 0.88f, 0.73f);
@@ -99,27 +100,31 @@ namespace AshenRealm.Editor
 
             var motion = actor.AddComponent<ArenaCharacterMotion>();
             CombatSandboxBuilder.SetReference(motion, "visual", visual);
-            CombatSandboxBuilder.SetReference(motion, "leftLeg", LegPivot(visual, "LeftLeg"));
-            CombatSandboxBuilder.SetReference(motion, "rightLeg", LegPivot(visual, "RightLeg"));
+            CombatSandboxBuilder.SetReference(motion, "leftLeg", Articulate(visual, "LeftLeg", "Thigh", true));
+            CombatSandboxBuilder.SetReference(motion, "rightLeg", Articulate(visual, "RightLeg", "Thigh", true));
 
             var feedback = actor.GetComponent<CombatFeedback>();
             CombatSandboxBuilder.SetReference(feedback, "body", FindPart(visual, "Chest"));
             if (isEnemy)
+            {
                 CombatSandboxBuilder.SetReference(feedback, "pose", visual);
+                CombatSandboxBuilder.SetReference(feedback, "strikingArm", Articulate(visual, "StrikeArm", "Shoulder", false));
+            }
         }
 
-        private static Transform LegPivot(Transform visual, string label)
+        private static Transform Articulate(Transform visual, string label, string anchorName, bool useTop)
         {
             var parts = visual.GetComponentsInChildren<MeshRenderer>()
                 .Where(renderer => PartName(renderer).StartsWith(label, StringComparison.Ordinal)).ToArray();
 
-            // Keep the imported hierarchy intact. Each leg renders from duplicate mesh references under its pivot.
-            var thigh = parts.Single(renderer => PartName(renderer) == label + "Thigh");
+            // Keep the imported hierarchy intact and move lightweight mesh references under the pivot.
+            Bounds anchor = parts.Single(renderer => PartName(renderer) == label + anchorName).bounds;
             var pivot = new GameObject(label).transform;
             pivot.SetParent(visual, false);
-            var hip = thigh.bounds.center;
-            hip.y = thigh.bounds.max.y;
-            pivot.localPosition = visual.InverseTransformPoint(hip);
+            var position = anchor.center;
+            if (useTop)
+                position.y = anchor.max.y;
+            pivot.localPosition = visual.InverseTransformPoint(position);
 
             foreach (var part in parts)
             {
@@ -183,6 +188,31 @@ namespace AshenRealm.Editor
             }
         }
 
+        private static void DressVigil(Transform arena)
+        {
+            // Preserve the existing pier collider and the baked NavMesh at the vigil site.
+            var pier = arena.Cast<Transform>().Single(child => child.name == "Broken pier" &&
+                Mathf.Abs(child.localPosition.x - 6f) < 0.01f && child.localPosition.z < 0f);
+            var rock = arena.Find("Rock");
+            if (rock)
+                rock.gameObject.SetActive(false);
+
+            var altar = InstantiateModel("VigilAltar", arena);
+            altar.localPosition = Vector3.ProjectOnPlane(pier.localPosition, Vector3.up);
+            altar.localScale = Vector3.one * 0.72f;
+            altar.localRotation = Quaternion.Euler(0f, 7f, 0f);
+
+            for (int index = 0; index < 8; index++)
+            {
+                float offset = (index % 4 - 1.5f) * 0.66f;
+                float depth = index < 4 ? -8.75f : 8.48f;
+                float scale = index % 3 == 0 ? 0.12f : 0.078f;
+                CombatSandboxBuilder.Primitive("Ash and chipped stone", PrimitiveType.Cube, arena,
+                    new Vector3(5.9f + offset, 0.065f, depth + Mathf.Sin(index * 1.37f) * 0.24f),
+                    new Vector3(scale * 3f, 0.04f, scale * 1.7f), Surface(index % 3 == 0 ? "Stone" : "Moss"), false);
+            }
+        }
+
         private static Transform InstantiateModel(string name, Transform parent)
         {
             var model = AssetDatabase.LoadAssetAtPath<GameObject>($"{ModelFolder}/{name}.fbx");
@@ -213,26 +243,16 @@ namespace AshenRealm.Editor
         {
             string shader = name is "Ember" or "Spirit"
                 ? "Universal Render Pipeline/Unlit"
-                : "Universal Render Pipeline/Lit";
+                : "AshenRealm/Courtyard Lit";
             Color color = Palette[name];
             var material = CombatSandboxBuilder.Material("Art" + name, color, shader);
-            if (material.color != color)
-            {
-                material.color = color;
-                EditorUtility.SetDirty(material);
-            }
-            // A restrained colored fill keeps silhouettes readable on the shaded side.
-            if (name is "Steel" or "Mantle" or "Carapace" or "Hide")
-            {
-                var emission = color * 0.56f;
-                if (material.GetColor("_EmissionColor") != emission)
-                {
-                    material.EnableKeyword("_EMISSION");
-                    material.SetColor("_EmissionColor", emission);
-                    material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-                    EditorUtility.SetDirty(material);
-                }
-            }
+            var resolved = Shader.Find(shader);
+            if (material.shader != resolved)
+                material.shader = resolved;
+            material.color = color;
+            if (material.HasProperty("_Rim"))
+                material.SetFloat("_Rim", name is "Iron" or "Steel" or "Carapace" ? 0.25f : 0.045f);
+            EditorUtility.SetDirty(material);
             return material;
         }
     }

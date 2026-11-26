@@ -57,7 +57,10 @@ def knight():
         plate(leg + "Greave", (x, -0.035, 0.38), (0.20, 0.22, 0.38), "Steel")
         plate(leg + "Thigh", (x, 0.02, 0.69), (0.23, 0.26, 0.33), "Iron")
         facet(leg + "Knee", (x, -0.14, 0.51), (0.14, 0.09, 0.12), "Steel")
-        facet("Shoulder", (side * 0.39, 0.005, 1.37), (0.25, 0.24, 0.20), "Steel", 2)
+        width = 0.37 if side < 0 else 0.29
+        for layer in range(3):
+            plate("Pauldron", (side * (0.34 + layer * 0.043), 0.005, 1.42 - layer * 0.064),
+                  (width - layer * 0.042, 0.38 - layer * 0.035, 0.145), "Steel", tilt=side * 0.48)
         plate("Arm", (side * 0.46, -0.01, 1.17), (0.20, 0.21, 0.32), "Iron", tilt=side * -0.15)
         plate("Gauntlet", (side * 0.46, -0.12, 1.02), (0.19, 0.31, 0.19), "Steel")
 
@@ -65,15 +68,21 @@ def knight():
     plate("Belt", (0, -0.012, 0.99), (0.58, 0.41, 0.12), "Leather")
     plate("Buckle", (0, -0.228, 0.99), (0.15, 0.05, 0.12), "Brass")
     facet("Chest", (0, -0.015, 1.25), (0.41, 0.28, 0.34), "Steel", 2)
-    plate("Neck", (0, 0.01, 1.50), (0.30, 0.29, 0.14), "Iron")
-    facet("Helm", (0, -0.018, 1.68), (0.27, 0.25, 0.28), "Steel", 2)
-    plate("Faceplate", (0, -0.223, 1.64), (0.34, 0.11, 0.25), "Iron")
-    plate("FacingVisor", (0, -0.288, 1.70), (0.26, 0.032, 0.037), "Spirit", bevel=0.01)
-    plate("Crest", (0, -0.005, 1.924), (0.060, 0.29, 0.060), "Brass", bevel=0.018)
+    for layer in range(3):
+        plate("Lame", (0, -0.19 + layer * 0.01, 1.23 - layer * 0.074),
+              (0.53 - 0.057 * layer, 0.14, 0.11), "Steel", tilt=-0.04)
+    plate("Neck", (0, 0.01, 1.51), (0.26, 0.29, 0.16), "Iron")
+    facet("Helm", (0, 0.025, 1.72), (0.217, 0.31, 0.28), "Steel", 2)
+    taper("SalletTail", (0, 0.15, 1.67), (0, 0.42, 1.51), 0.18, 0.09, "Steel", 6)
+    plate("Faceplate", (0, -0.247, 1.66), (0.36, 0.18, 0.14), "Iron", bevel=0.031)
+    plate("Bevor", (0, -0.202, 1.565), (0.27, 0.20, 0.13), "Steel", bevel=0.046)
+    plate("FacingVisor", (0, -0.344, 1.687), (0.185, 0.028, 0.025), "Spirit", bevel=0.008)
+    plate("Crest", (0, -0.005, 1.979), (0.044, 0.24, 0.046), "Brass", bevel=0.014)
+    plate("MantleClasp", (-0.22, -0.227, 1.39), (0.13, 0.042, 0.14), "Brass")
     plate("Shield", (-0.49, -0.22, 1.02), (0.35, 0.11, 0.55), "Iron", bevel=0.085, tilt=0.20)
     plate("ShieldRidge", (-0.49, -0.28, 1.04), (0.12, 0.035, 0.33), "Brass", tilt=0.20)
-    cape = poly("Mantle", [(-0.35, 0.17, 1.42), (0.35, 0.17, 1.42), (0.24, 0.31, 1.0),
-                    (0.36, 0.48, 0.42), (0.03, 0.41, 0.52), (-0.29, 0.45, 0.38),
+    cape = poly("Mantle", [(-0.39, 0.12, 1.47), (0.21, 0.18, 1.37), (0.15, 0.31, 0.94),
+                    (0.19, 0.46, 0.70), (-0.09, 0.46, 0.44), (-0.38, 0.41, 0.27),
                     (-0.26, 0.29, 1.0), (0.01, 0.30, 0.98)],
          [(0, 7, 1), (0, 6, 7), (1, 7, 2), (2, 7, 3), (3, 7, 4), (4, 7, 5),
           (5, 7, 6)], "Mantle")
@@ -90,16 +99,25 @@ def grunt():
         facet(leg + "Paw", (x, -0.15, 0.16), (0.17, 0.28, 0.16), "Carapace", 2)
         taper(leg + "Shin", (x, -0.02, 0.16), (x, 0.10, 0.56), 0.12, 0.18, "Hide")
         taper(leg + "Thigh", (x, 0.10, 0.55), (x * 0.8, 0.08, 0.93), 0.18, 0.22, "Carapace")
-        facet("Haunch", (side * 0.49, 0.08, 1.36), (0.29, 0.29, 0.30), "Carapace", 2)
-        taper("Arm", (side * 0.47, 0.08, 1.42), (side * 0.60, -0.22, 0.72), 0.19, 0.16, "Hide")
-        facet("Fist", (side * 0.60, -0.29, 0.68), (0.17, 0.21, 0.20), "Carapace", 2)
+        prefix = "StrikeArm" if side > 0 else "SupportArm"
+        size = 1.34 if side > 0 else 0.82
+        shoulder = (side * 0.44, 0.08, 1.31)
+        elbow = (side * 0.60, -0.08, 0.91)
+        fist = (side * (0.68 if side > 0 else 0.53), -0.38, 0.49 if side > 0 else 0.68)
+        facet(prefix + "Shoulder", shoulder, (0.24 * size, 0.27, 0.26), "Carapace", 1)
+        taper(prefix + "Upper", shoulder, elbow, 0.21 * size, 0.13 * size, "Hide")
+        taper(prefix + "Forearm", elbow, fist, 0.155 * size, 0.23 * size, "Carapace")
+        facet(prefix + "Fist", fist, (0.17 * size, 0.22 * size, 0.14 * size), "Carapace", 1)
+        taper(prefix + "Ridge", (elbow[0], -0.16, 0.87),
+              (side * 0.83, -0.19, 0.97), 0.068 * size, 0.009, "Bone")
         for claw in range(3):
-            taper("Claw", (side * 0.60 + (claw - 1) * 0.085, -0.43, 0.69),
-                  (side * 0.59 + (claw - 1) * 0.086, -0.55, 0.55), 0.037, 0.008, "Bone")
+            x_claw = fist[0] + (claw - 1) * 0.08 * size
+            taper(prefix + "Claw", (x_claw, -0.52, fist[2]),
+                  (x_claw, -0.66, fist[2] - 0.15), 0.032 * size, 0.007, "Bone")
         start = (side * 0.20, -0.20, 1.60)
-        bend = (side * (0.37 if side < 0 else 0.43), -0.13, 1.84)
+        bend = (side * (0.35 if side < 0 else 0.45), -0.13, 1.69)
         taper("AntlerBase", start, bend, 0.11, 0.069, "Bone")
-        taper("AntlerTip", bend, (side * 0.49, 0.12, 2.09 if side < 0 else 1.99), 0.071, 0.009, "Bone")
+        taper("AntlerTip", bend, (side * 0.49, 0.12, 1.86 if side < 0 else 1.76), 0.071, 0.009, "Bone")
         for level in range(3):
             z = 0.99 + level * 0.105
             taper("Rib", (side * 0.085, -0.30, z), (side * 0.31, -0.20, z + 0.08), 0.049, 0.022, "Carapace")
@@ -107,10 +125,10 @@ def grunt():
     facet("Spine", (0, 0.18, 1.16), (0.51, 0.37, 0.50), "Carapace", 2)
     facet("Chest", (0, -0.035, 1.19), (0.45, 0.32, 0.39), "Hide", 2)
     facet("Core", (0, -0.31, 1.13), (0.13, 0.10, 0.21), "Ember", 2)
-    facet("Skull", (0, -0.31, 1.53), (0.28, 0.31, 0.26), "Carapace", 2)
-    facet("Jaw", (0, -0.47, 1.39), (0.22, 0.23, 0.14), "Hide", 2)
+    facet("Skull", (0, -0.33, 1.43), (0.26, 0.31, 0.20), "Carapace", 2)
+    facet("Jaw", (0, -0.47, 1.32), (0.20, 0.24, 0.12), "Hide", 2)
     for side in (-1, 1):
-        plate("FacingEye" + ("A" if side < 0 else "B"), (side * 0.115, -0.567, 1.56),
+        plate("FacingEye" + ("A" if side < 0 else "B"), (side * 0.115, -0.588, 1.46),
               (0.10, 0.048, 0.047), "Ember", bevel=0.013, tilt=side * 0.24)
     for index in range(4):
         taper("DorsalSpur", (0, 0.42 - index * 0.028, 0.94 + index * 0.145),
@@ -151,14 +169,38 @@ def merge_surfaces():
 def floor():
     rng = random.Random(132)
     for row in range(12):
+        y = (row - 5.5) * 1.55
+        on_path = abs(y) < 2.35
         for column in range(15):
             x = (column - 7) * 1.56
-            y = (row - 5.5) * 1.55
-            surface = rng.choice(("Stone", "Slate", "Slate", "Moss"))
-            if abs(y) < 2.35:
-                surface = rng.choice(("Stone", "Path", "Path"))
-            plate("Flagstone", (x, y, 0.023), (1.49, 1.49, 0.064), surface,
-                  bevel=0.025, tilt=rng.uniform(-0.008, 0.008))
+            if not on_path and abs(y) > 3.75 and rng.random() < 0.19:
+                continue
+            surface = rng.choice(("Path", "Path", "Stone")) if on_path else rng.choice(
+                ("Stone", "Slate", "Slate", "Moss"))
+            offset = 0 if on_path else rng.uniform(-0.10, 0.10)
+            slab = plate("Flagstone", (x + offset, y, 0.025),
+                         (rng.uniform(1.38, 1.47), rng.uniform(1.39, 1.48), 0.064),
+                         surface, bevel=0.026)
+            slab.rotation_euler.z = rng.uniform(-0.017, 0.017) if on_path else rng.uniform(-0.09, 0.09)
+            if not on_path and abs(y) > 3.75 and rng.random() < 0.26:
+                fragment = facet("LooseFragment", (x + 0.69, y + rng.uniform(-0.54, 0.54), 0.045),
+                                 (rng.uniform(0.19, 0.34), 0.18, 0.055), "Slate")
+                fragment.rotation_euler.z = rng.uniform(-0.65, 0.65)
+    merge_surfaces()
+
+
+def vigil():
+    plate("Plinth", (0, 0, 0.105), (1.5, 1.02, 0.21), "Slate", bevel=0.068)
+    plate("Stipes", (0.03, 0, 0.40), (1.10, 0.73, 0.46), "Stone", bevel=0.074)
+    plate("Crown", (-0.04, 0, 0.72), (1.50, 0.98, 0.22), "Path", bevel=0.062)
+    plate("FoldedVigilCloth", (0.22, -0.30, 0.838), (0.54, 0.48, 0.031), "Mantle", bevel=0.01)
+    plate("HangingCloth", (0.22, -0.52, 0.65), (0.52, 0.041, 0.32), "Mantle", bevel=0.01)
+    plate("ClothHem", (0.22, -0.551, 0.505), (0.50, 0.025, 0.038), "Brass", bevel=0.009)
+    taper("Vessel", (-0.24, -0.04, 0.84), (-0.24, -0.04, 1.06), 0.103, 0.165, "Iron", 8)
+    facet("Ash", (-0.24, -0.04, 1.08), (0.14, 0.14, 0.031), "Slate", 2)
+    for x, y, height in ((0.42, 0.13, 0.17), (0.51, -0.12, 0.11), (-0.49, 0.18, 0.13)):
+        taper("Candle", (x, y, 0.83), (x, y, 0.83 + height), 0.046, 0.040, "Bone", 6)
+        facet("Flame", (x, y, 0.88 + height), (0.022, 0.022, 0.059), "Ember")
     merge_surfaces()
 
 
@@ -202,7 +244,7 @@ def main():
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for name, build in (("FallenKnight", knight), ("CorruptedGrunt", grunt), ("AshenSword", sword),
-                        ("ArenaPaving", floor), ("AshGate", gate)):
+                        ("ArenaPaving", floor), ("AshGate", gate), ("VigilAltar", vigil)):
         reset()
         PALETTE.clear()
         PALETTE.update({label: material(label, (*rgb, 1)) for label, rgb in COLORS.items()})

@@ -44,6 +44,9 @@ namespace AshenRealm.Tests
                 var playerHealth = movement.GetComponent<Health>();
                 var combat = movement.GetComponent<PlayerCombat>();
                 var enemyHealth = enemy.GetComponent<Health>();
+                var strikingArm = enemy.transform.Find("CorruptedGrunt/StrikeArm");
+                Assert.That(strikingArm, Is.Not.Null);
+                var restArm = strikingArm.localRotation;
                 Assert.That(enemyHealth.CurrentHealth, Is.EqualTo(45));
                 var originalPlayer = movement.transform.position;
                 var originalCamera = camera.transform.position;
@@ -72,7 +75,14 @@ namespace AshenRealm.Tests
                 Assert.That(warning.enabled, Is.True);
 
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.S, Key.A));
-                yield return new WaitForSeconds(0.35f);
+                float retreatUntil = Time.time + 0.35f;
+                bool sawArmWindup = false;
+                while (Time.time < retreatUntil)
+                {
+                    sawArmWindup |= Quaternion.Angle(restArm, strikingArm.localRotation) > 10f;
+                    yield return null;
+                }
+                Assert.That(sawArmWindup, Is.True);
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState());
                 deadline = Time.time + 2f;
                 while (enemy.IsWindingUp && Time.time < deadline)
